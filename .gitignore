@@ -50,3 +50,6 @@ apps/*/.env.local
 
 # OS
 Thumbs.db
+
+# Kilocode
+.kilocode

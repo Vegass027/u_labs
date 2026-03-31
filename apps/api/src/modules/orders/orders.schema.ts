@@ -11,7 +11,8 @@ export type CreateOrderInput = z.infer<typeof createOrderSchema>
 export const createManagerOrderSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(200),
   raw_text: z.string().optional(),
-  client_user_id: z.string().uuid('Invalid client user ID'),
+  client_name: z.string().min(1, 'Client name is required'),
+  client_email: z.string().email('Invalid email address'),
 })
 
 export type CreateManagerOrderInput = z.infer<typeof createManagerOrderSchema>

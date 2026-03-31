@@ -1,87 +1,80 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 
-interface AudioUploadFormProps {
-  orderId: string
-}
+export function AudioUploadForm({ orderId }: { orderId: string }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-export function AudioUploadForm({ orderId }: AudioUploadFormProps) {
-  const router = useRouter()
-  const [file, setFile] = useState<File | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (!file) return
+    setError('')
+    setLoading(true)
 
-    setUploading(true)
-    setError(null)
+    const formData = new FormData(e.currentTarget)
+    const audioFile = formData.get('audio') as File
+
+    if (!audioFile) {
+      setError('выберите аудиофайл')
+      setLoading(false)
+      return
+    }
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const response = await fetch(`/api/manager/orders/${orderId}/audio`, {
+      const response = await fetch('/api/ai/transcribe', {
         method: 'POST',
-        credentials: 'include',
         body: formData,
       })
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || 'Failed to upload audio')
+        setError(data.error || 'ошибка при загрузке')
+        setLoading(false)
+        return
       }
 
-      router.refresh()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload audio')
-    } finally {
-      setUploading(false)
+      window.location.reload()
+    } catch {
+      setError('произошла ошибка')
+      setLoading(false)
     }
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Загрузить аудио</h3>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="border border-border rounded-lg overflow-hidden bg-card">
+      <div className="px-4 py-3 border-b border-border bg-muted/50">
+        <h3 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
+          загрузить аудио
+        </h3>
+      </div>
+      <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        {error && (
+          <div className="text-sm font-mono text-red-400 px-3 py-2 rounded bg-red-500/10 border border-red-500/20">
+            <span className="font-bold">[error]</span> {error}
+          </div>
+        )}
         <div>
-          <label htmlFor="audio" className="block text-sm font-medium text-gray-700 mb-2">
-            Аудиофайл
+          <label htmlFor="audio" className="block text-xs text-muted-foreground mb-1 font-mono">
+            аудиофайл
           </label>
           <input
             id="audio"
+            name="audio"
             type="file"
             accept="audio/*"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-            disabled={uploading}
-            className="block w-full text-sm text-gray-500
-              file:mr-4 file:py-2 file:px-4
-              file:rounded-md file:border-0
-              file:text-sm file:font-semibold
-              file:bg-blue-50 file:text-blue-700
-              hover:file:bg-blue-100
-              disabled:opacity-50 disabled:cursor-not-allowed"
+            required
+            className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:border-primary/50 bg-card text-sm font-mono"
           />
         </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-3">
-            <p className="text-sm text-red-800">{error}</p>
-          </div>
-        )}
-
+        <input type="hidden" name="orderId" value={orderId} />
         <button
           type="submit"
-          disabled={!file || uploading}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md
-            hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500
-            disabled:bg-gray-300 disabled:cursor-not-allowed
-            transition-colors"
+          disabled={loading}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/30 text-primary rounded text-sm font-mono hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full justify-center"
         >
-          {uploading ? 'Загрузка...' : 'Загрузить'}
+          <span className="text-primary">
+            {loading ? 'загружаем...' : './upload-audio'}
+          </span>
         </button>
       </form>
     </div>

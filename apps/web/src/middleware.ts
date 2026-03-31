@@ -6,11 +6,20 @@ const protectedPaths = ['/dashboard', '/manager', '/client', '/settings']
 // Пути куда залогиненный пользователь не должен попадать
 const authPaths = ['/login', '/register']
 
+// Публичные пути — пропускаем без проверки авторизации
+const publicPaths = ['/auth/callback', '/auth/reset-password']
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   const isProtectedPath = protectedPaths.some(p => pathname.startsWith(p))
   const isAuthPath = authPaths.some(p => pathname.startsWith(p))
+  const isPublicPath = publicPaths.some(p => pathname.startsWith(p))
+
+  // Публичный путь — пропускаем без запросов
+  if (isPublicPath) {
+    return NextResponse.next()
+  }
 
   // Не защищённый и не auth путь — пропускаем без запросов
   if (!isProtectedPath && !isAuthPath) {

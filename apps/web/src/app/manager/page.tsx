@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { StatusBadge } from './components/StatusBadge'
+import Link from 'next/link'
 import type { Order } from '@agency/types'
 
 async function getManagerOrders(): Promise<Order[]> {
@@ -23,7 +24,6 @@ async function getManagerOrders(): Promise<Order[]> {
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Failed to fetch manager orders:', error)
     return []
   }
 
@@ -34,72 +34,73 @@ export default async function ManagerPage() {
   const orders = await getManagerOrders()
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">My Orders</h1>
-        <a
+    <div className="max-w-4xl mx-auto space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-bold text-foreground font-mono">мои заявки</h1>
+          <p className="text-xs text-muted-foreground">все проекты, которые вы ведёте</p>
+        </div>
+        <Link
           href="/manager/orders/new"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded border border-primary/30 text-primary text-xs font-mono hover:bg-primary/10 transition-colors"
         >
-          Create Order
-        </a>
+          <span>+</span>
+          создать заявку
+        </Link>
       </div>
 
-      <div className="bg-white rounded-lg shadow">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Title</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Client</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Commission</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Created</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {orders.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                  No orders yet. Create your first order!
-                </td>
-              </tr>
-            ) : (
-              orders.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <a
-                      href={`/dashboard/orders/${order.id}`}
-                      className="text-blue-600 hover:underline font-medium"
-                    >
-                      {order.title}
-                    </a>
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={order.status} />
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    {order.client?.full_name || order.client?.email || '-'}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    {order.manager_commission ? `$${order.manager_commission.toLocaleString()}` : '-'}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {new Date(order.created_at).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3">
-                    <a
-                      href={`/dashboard/orders/${order.id}`}
-                      className="text-blue-600 hover:underline text-sm"
-                    >
-                      View
-                    </a>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      {/* Orders table */}
+      <div className="border border-border rounded-lg overflow-hidden bg-card">
+        {/* Table header */}
+        <div className="grid grid-cols-[1fr_100px_120px_80px_60px] gap-2 px-3 py-2 bg-muted/30 border-b border-border text-xs text-muted-foreground uppercase tracking-wider">
+          <div>название</div>
+          <div>статус</div>
+          <div>клиент</div>
+          <div>комиссия</div>
+          <div>дата</div>
+        </div>
+
+        {/* Table body */}
+        {orders.length === 0 ? (
+          <div className="px-3 py-8 text-center text-muted-foreground text-xs">
+            <div className="text-terminal-comment mb-2">// заявок пока нет</div>
+            <div>создайте первую заявку, чтобы начать работу</div>
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {orders.map((order) => (
+              <Link
+                key={order.id}
+                href={`/manager/orders/${order.id}`}
+                className="grid grid-cols-[1fr_100px_120px_80px_60px] gap-2 px-3 py-2 text-xs hover:bg-muted/30 transition-colors items-center"
+              >
+                <div className="text-foreground truncate font-medium">
+                  {order.title}
+                </div>
+                <div>
+                  <StatusBadge status={order.status} />
+                </div>
+                <div className="text-muted-foreground truncate">
+                  {order.client?.full_name || order.client?.email || '-'}
+                </div>
+                <div className="text-primary font-mono">
+                  {order.manager_commission 
+                    ? `${order.manager_commission.toLocaleString('ru-RU')} ₽`
+                    : '—'}
+                </div>
+                <div className="text-muted-foreground">
+                  {new Date(order.created_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Help text */}
+      <div className="text-xs text-muted-foreground">
+        <span className="text-primary">→</span> кликните на заявку, чтобы посмотреть детали и загрузить материалы
       </div>
     </div>
   )

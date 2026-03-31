@@ -1,6 +1,7 @@
-import { supabase } from '../../db/client'
+import { supabase, supabaseAdmin } from '../../db/client'
 import { logger } from '../../utils/logger'
 import { AppError, NotFoundError, ForbiddenError } from '../../utils/errors'
+import { config } from '../../config'
 import type { Order, OrderStatus } from '@agency/types'
 import type { CreateOrderInput, CreateManagerOrderInput, ListOrdersInput } from './orders.schema'
 import { notifyNewOrder, notifyStatusChange } from '../notifications/telegram.service'
@@ -57,12 +58,13 @@ export async function createOrder(input: CreateOrderInput, clientUserId: string)
 }
 
 export async function createManagerOrder(input: CreateManagerOrderInput, managerUserId: string): Promise<Order> {
-  logger.info({ managerUserId, title: input.title, clientId: input.client_user_id }, 'Manager creating order for client')
+  logger.info({ managerUserId, title: input.title, clientEmail: input.client_email }, 'Manager creating order for client')
 
-  const { data, error } = await supabase
+  const { data: order, error: orderError } = await supabase
     .from('orders')
     .insert({
-      client_user_id: input.client_user_id,
+      client_name: input.client_name,
+      client_contact: input.client_email,
       manager_user_id: managerUserId,
       title: input.title,
       raw_text: input.raw_text,
@@ -71,24 +73,38 @@ export async function createManagerOrder(input: CreateManagerOrderInput, manager
     .select()
     .single()
 
-  if (error || !data) {
-    logger.error({ error }, 'Failed to create manager order')
-    throw new AppError(error?.message || 'Failed to create order', 500)
+  if (orderError || !order) {
+    logger.error({ error: orderError }, 'Failed to create manager order')
+    throw new AppError(orderError?.message || 'Failed to create order', 500)
   }
 
-  logger.info({ orderId: data.id }, 'Manager order created successfully')
+  logger.info({ orderId: order.id }, 'Manager order created successfully')
 
-  // Get manager name for notification
+  const { data: existingClient } = await supabase
+    .from('users')
+    .select('id')
+    .eq('email', input.client_email)
+    .limit(1)
+    .single()
+
+  if (existingClient) {
+    await supabase
+      .from('orders')
+      .update({ client_user_id: existingClient.id })
+      .eq('id', order.id)
+    logger.info({ orderId: order.id, clientId: existingClient.id }, 'Linked existing client to order')
+  } else {
+    await inviteClient(input.client_email, input.client_name, order.id)
+  }
+
   const { data: managerData } = await supabase
     .from('users')
     .select('full_name')
     .eq('id', managerUserId)
     .single()
 
-  // Send notifications
-  await notifyNewOrder(data, managerData?.full_name)
+  await notifyNewOrder(order, managerData?.full_name)
 
-  // Get owner for in-app notification
   const { data: ownerData } = await supabase
     .from('users')
     .select('id')
@@ -99,14 +115,33 @@ export async function createManagerOrder(input: CreateManagerOrderInput, manager
   if (ownerData) {
     await createNotification(
       ownerData.id,
-      data.id,
+      order.id,
       'new_order',
       'Новая заявка',
-      data.title
+      order.title
     )
   }
 
-  return data
+  return order
+}
+
+async function inviteClient(email: string, fullName: string, orderId: string) {
+  const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+    data: {
+      role: 'client',
+      full_name: fullName,
+      password_set: false,
+    },
+    redirectTo: `${config.WEB_URL}/auth/callback`,
+  })
+
+  // Логируем и data и error
+  logger.info({ email, orderId, data, error }, 'Invite result')
+
+  if (error) {
+    logger.error({ email, error }, 'Failed to invite client')
+    throw error // не глотаем ошибку
+  }
 }
 
 export async function getOrderById(orderId: string, userId: string): Promise<Order> {

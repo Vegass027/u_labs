@@ -28,7 +28,6 @@ async function getManagerBalance(userId: string) {
     .single()
   
   if (error || !profile) {
-    console.error('Failed to fetch manager balance:', error)
     return null
   }
   
@@ -58,11 +57,31 @@ async function getManagerCommissions(managerUserId: string) {
     .order('created_at', { ascending: false })
   
   if (error) {
-    console.error('Failed to fetch manager commissions:', error)
     return []
   }
   
   return commissions || []
+}
+
+async function getManagerStats(managerUserId: string) {
+  const supabase = createClient()
+  
+  // Get orders count and unique clients
+  const { data: orders } = await supabase
+    .from('orders')
+    .select('id, client_user_id, status')
+    .eq('manager_user_id', managerUserId)
+  
+  const totalOrders = orders?.length || 0
+  const uniqueClients = new Set(orders?.map(o => o.client_user_id)).size
+  const doneOrders = orders?.filter(o => o.status === 'done').length || 0
+  const conversionRate = totalOrders > 0 ? Math.round((doneOrders / totalOrders) * 100) : 0
+  
+  return {
+    clients: uniqueClients,
+    projects: totalOrders,
+    conversion: `${conversionRate}%`
+  }
 }
 
 export default async function ManagerBalancePage() {
@@ -70,10 +89,11 @@ export default async function ManagerBalancePage() {
   
   if (!currentUser || currentUser.role !== 'manager') {
     return (
-      <div className="max-w-6xl mx-auto py-8 px-4">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <h1 className="text-xl font-semibold text-red-900 mb-2">Ошибка</h1>
-          <p className="text-red-700">Доступ запрещен</p>
+      <div className="max-w-3xl mx-auto">
+        <div className="border border-red-500/30 rounded-lg p-6 bg-red-500/5">
+          <div className="text-sm font-mono text-red-400">
+            <span className="font-bold">[error]</span> доступ запрещён
+          </div>
         </div>
       </div>
     )
@@ -81,123 +101,134 @@ export default async function ManagerBalancePage() {
   
   const balance = await getManagerBalance(currentUser.id)
   const commissions = await getManagerCommissions(currentUser.id)
+  const stats = await getManagerStats(currentUser.id)
   
   if (!balance) {
     return (
-      <div className="max-w-6xl mx-auto py-8 px-4">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <h1 className="text-xl font-semibold text-red-900 mb-2">Ошибка</h1>
-          <p className="text-red-700">Профиль менеджера не найден</p>
+      <div className="max-w-3xl mx-auto">
+        <div className="border border-red-500/30 rounded-lg p-6 bg-red-500/5">
+          <div className="text-sm font-mono text-red-400">
+            <span className="font-bold">[error]</span> профиль менеджера не найден
+          </div>
         </div>
       </div>
     )
   }
+
+  const totalBalance = (balance.balance_reserved || 0) + (balance.balance_payable || 0)
   
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Баланс менеджера</h1>
-      
-      <div className="grid md:grid-cols-3 gap-6">
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Зарезервировано</h2>
-          <p className="text-3xl font-bold text-gray-600">
-            ${balance.balance_reserved?.toLocaleString() || 0}
-          </p>
-          <p className="text-sm text-gray-500 mt-2">
-            Комиссии по активным заказам
-          </p>
+    <div className="max-w-3xl mx-auto space-y-4">
+      {/* Comment */}
+      <div className="text-terminal-comment text-xs">
+        // тебе не нужно разбираться в разработке, делать проекты или нанимать команду
+      </div>
+
+      {/* Balance card */}
+      <div className="border border-primary/20 rounded-lg p-4 bg-card">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs text-muted-foreground uppercase tracking-wider">баланс</span>
+          <span className="text-xs text-primary font-mono">обновлено только что</span>
         </div>
-        
-        <div className="bg-white border border-amber-200 rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-amber-900 mb-2">К выплате</h2>
-          <p className="text-3xl font-bold text-amber-600">
-            ${balance.balance_payable?.toLocaleString() || 0}
-          </p>
-          <p className="text-sm text-gray-500 mt-2">
-            Комиссии по завершённым заказам
-          </p>
+        <div className="text-3xl sm:text-4xl font-bold text-primary text-glow font-mono">
+          {totalBalance.toLocaleString('ru-RU')} ₽
         </div>
-        
-        <div className="bg-white border border-green-200 rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-green-900 mb-2">Выплачено</h2>
-          <p className="text-3xl font-bold text-green-600">
-            ${balance.balance_paid?.toLocaleString() || 0}
-          </p>
-          <p className="text-sm text-gray-500 mt-2">
-            Выплаченные комиссии
-          </p>
+        <div className="text-xs text-muted-foreground mt-1">
+          {balance.balance_payable?.toLocaleString('ru-RU') || 0} ₽ доступно к выводу
         </div>
       </div>
-      
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <div className="px-6 py-4 border-b bg-gray-50">
-          <h2 className="text-lg font-semibold text-gray-900">История комиссий</h2>
-        </div>
-        
-        {commissions.length === 0 ? (
-          <div className="p-6 text-center text-gray-600">
-            Комиссии не найдены
+
+      {/* Stats grid */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="border border-border rounded-lg p-3 text-center bg-card">
+          <div className="text-xl font-bold text-foreground font-mono">
+            {stats.clients}
           </div>
-        ) : (
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Заказ
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Сумма
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Статус
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Создана
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Выплачена
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {commissions.map((commission) => (
-                <tr key={commission.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {(commission.order as any)?.title || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${commission.amount.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded ${
-                        commission.tx_status === 'reserved'
-                          ? 'bg-gray-100 text-gray-800'
-                          : commission.tx_status === 'payable'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-green-100 text-green-800'
-                      }`}
-                    >
-                      {commission.tx_status === 'reserved'
-                        ? 'Зарезервирована'
-                        : commission.tx_status === 'payable'
-                        ? 'К выплате'
-                        : 'Выплачена'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(commission.created_at).toLocaleDateString('ru-RU')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {commission.paid_at
-                      ? new Date(commission.paid_at).toLocaleDateString('ru-RU')
-                      : '-'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+          <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">клиентов</div>
+        </div>
+        <div className="border border-border rounded-lg p-3 text-center bg-card">
+          <div className="text-xl font-bold text-foreground font-mono">
+            {stats.projects}
+          </div>
+          <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">проектов</div>
+        </div>
+        <div className="border border-border rounded-lg p-3 text-center bg-card">
+          <div className="text-xl font-bold text-foreground font-mono">
+            {stats.conversion}
+          </div>
+          <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">конверсия</div>
+        </div>
+      </div>
+
+      {/* Balance breakdown */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="border border-border rounded-lg p-3 bg-card">
+          <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">зарезервировано</div>
+          <div className="text-lg font-bold text-muted-foreground font-mono">
+            {balance.balance_reserved?.toLocaleString('ru-RU') || 0} ₽
+          </div>
+          <div className="text-[10px] text-muted-foreground mt-1">по активным заказам</div>
+        </div>
+        <div className="border border-primary/30 rounded-lg p-3 bg-card">
+          <div className="text-xs text-primary uppercase tracking-wider mb-1">к выплате</div>
+          <div className="text-lg font-bold text-primary font-mono">
+            {balance.balance_payable?.toLocaleString('ru-RU') || 0} ₽
+          </div>
+          <div className="text-[10px] text-muted-foreground mt-1">по завершённым заказам</div>
+        </div>
+      </div>
+
+      {/* Transaction log */}
+      <div className="border border-border rounded-lg overflow-hidden bg-card">
+        <div className="px-3 py-2 bg-muted/30 text-xs text-muted-foreground uppercase tracking-wider border-b border-border">
+          последние начисления
+        </div>
+        <div className="divide-y divide-border">
+          {commissions.length === 0 ? (
+            <div className="px-3 py-4 text-center text-muted-foreground text-xs">
+              комиссии не найдены
+            </div>
+          ) : (
+            commissions.slice(0, 10).map((commission) => (
+              <div
+                key={commission.id}
+                className="flex items-center justify-between px-3 py-2 text-xs sm:text-sm"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-muted-foreground shrink-0">
+                    {new Date(commission.created_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })}
+                  </span>
+                  <span className="text-foreground truncate">
+                    {(commission.order as any)?.title || 'Без названия'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                    commission.tx_status === 'reserved'
+                      ? 'bg-muted text-muted-foreground'
+                      : commission.tx_status === 'payable'
+                      ? 'bg-primary/10 text-primary'
+                      : 'bg-primary/20 text-primary'
+                  }`}>
+                    {commission.tx_status === 'reserved'
+                      ? 'зарезервирована'
+                      : commission.tx_status === 'payable'
+                      ? 'к выплате'
+                      : 'выведено'}
+                  </span>
+                  <span className="text-primary font-mono font-medium">
+                    +{commission.amount.toLocaleString('ru-RU')} ₽
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Help text */}
+      <div className="text-xs text-muted-foreground">
+        <span className="text-primary">→</span> приводишь клиента → создаёшь заявку → система всё оформляет → получаешь 30%
       </div>
     </div>
   )

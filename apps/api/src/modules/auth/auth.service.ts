@@ -12,6 +12,9 @@ export async function registerUser(input: RegisterInput): Promise<User> {
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      data: { role, full_name: fullName }, // Сохраняем роль в user_metadata
+    }
   })
 
   if (authError) {
@@ -24,29 +27,34 @@ export async function registerUser(input: RegisterInput): Promise<User> {
   }
 
   const userId = authData.user.id
-
+  
+  // Триггер handle_new_auth_user автоматически создаст запись в public.users
+  // Ждём немного чтобы триггер успел сработать
+  await new Promise(resolve => setTimeout(resolve, 500))
+  
   const { data: userData, error: dbError } = await supabaseAdmin
     .from('users')
-    .insert({
-      id: userId,
-      email,
-      role,
-      full_name: fullName,
-      phone,
-      is_active: true,
-    })
-    .select()
+    .select('*')
+    .eq('id', userId)
     .single()
 
-  if (dbError) {
-    logger.error({ error: dbError }, 'Failed to insert user into public.users')
-    if (supabaseAdmin) {
-      await supabaseAdmin.auth.admin.deleteUser(userId)
+  if (dbError || !userData) {
+    logger.error({ error: dbError }, 'Failed to fetch user from public.users after trigger')
+    // Если триггер не сработал — удаляем пользователя из auth.users
+    await supabaseAdmin.auth.admin.deleteUser(userId)
+    throw new AppError('Failed to create user profile', 500)
+  }
+
+  // Если передан phone — обновляем
+  if (phone) {
+    const { error: updateError } = await supabaseAdmin
+      .from('users')
+      .update({ phone })
+      .eq('id', userId)
+    
+    if (updateError) {
+      logger.error({ error: updateError }, 'Failed to update user phone')
     }
-    if (dbError.code === '23505' && dbError.message.includes('users_email_key')) {
-      throw new ConflictError('Пользователь с таким email уже существует')
-    }
-    throw new AppError(dbError.message, 500)
   }
 
   logger.info({ userId, email, role }, 'User registered successfully')

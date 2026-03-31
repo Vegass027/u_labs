@@ -1,91 +1,83 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 
-interface TextStructureFormProps {
-  orderId: string
-}
+export function TextStructureForm({ orderId }: { orderId: string }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-export function TextStructureForm({ orderId }: TextStructureFormProps) {
-  const router = useRouter()
-  const [text, setText] = useState('')
-  const [structuring, setStructuring] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (text.trim().length < 10) {
-      setError('Текст должен содержать минимум 10 символов')
+    setError('')
+    setLoading(true)
+
+    const formData = new FormData(e.currentTarget)
+    const rawText = formData.get('raw_text') as string
+
+    if (!rawText.trim()) {
+      setError('введите текст для структурирования')
+      setLoading(false)
       return
     }
-
-    setStructuring(true)
-    setError(null)
 
     try {
       const response = await fetch('/api/ai/structure', {
         method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text,
-          order_id: orderId,
+          orderId,
+          rawText,
         }),
       })
 
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || 'Failed to structure text')
+        setError(data.error || 'ошибка при структурировании')
+        setLoading(false)
+        return
       }
 
-      router.refresh()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to structure text')
-    } finally {
-      setStructuring(false)
+      window.location.reload()
+    } catch {
+      setError('произошла ошибка')
+      setLoading(false)
     }
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Структурировать текст</h3>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="text" className="block text-sm font-medium text-gray-700 mb-2">
-            Текст заявки
-          </label>
-          <textarea
-            id="text"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            disabled={structuring}
-            rows={6}
-            className="block w-full rounded-md border-gray-300 shadow-sm
-              focus:border-blue-500 focus:ring-blue-500
-              disabled:opacity-50 disabled:cursor-not-allowed
-              sm:text-sm"
-            placeholder="Вставьте текст заявки клиента..."
-          />
-        </div>
-
+    <div className="border border-border rounded-lg overflow-hidden bg-card">
+      <div className="px-4 py-3 border-b border-border bg-muted/50">
+        <h3 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
+          структурировать текст
+        </h3>
+      </div>
+      <form onSubmit={handleSubmit} className="p-4 space-y-4">
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-3">
-            <p className="text-sm text-red-800">{error}</p>
+          <div className="text-sm font-mono text-red-400 px-3 py-2 rounded bg-red-500/10 border border-red-500/20">
+            <span className="font-bold">[error]</span> {error}
           </div>
         )}
-
+        <div>
+          <label htmlFor="raw_text" className="block text-xs text-muted-foreground mb-1 font-mono">
+            текст брифа
+          </label>
+          <textarea
+            id="raw_text"
+            name="raw_text"
+            rows={6}
+            required
+            placeholder="введите текст брифа..."
+            className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:border-primary/50 bg-card resize-none text-sm font-mono"
+          />
+        </div>
         <button
           type="submit"
-          disabled={text.trim().length < 10 || structuring}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md
-            hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500
-            disabled:bg-gray-300 disabled:cursor-not-allowed
-            transition-colors"
+          disabled={loading}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/30 text-primary rounded text-sm font-mono hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full justify-center"
         >
-          {structuring ? 'Структурирование...' : 'Структурировать'}
+          <span className="text-primary">
+            {loading ? 'структурируем...' : './structure-text'}
+          </span>
         </button>
       </form>
     </div>

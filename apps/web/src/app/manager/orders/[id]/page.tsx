@@ -3,6 +3,8 @@ import { BriefDisplay } from '@/components/BriefDisplay'
 import { AudioUploadForm } from './AudioUploadForm'
 import { TextStructureForm } from './TextStructureForm'
 import ChatWindow from '@/components/chat/ChatWindow'
+import Link from 'next/link'
+import { StatusBadge } from '../../components/StatusBadge'
 
 async function getCurrentUser() {
   const supabase = createClient()
@@ -39,9 +41,9 @@ export default async function ManagerOrderDetailPage({
   if (error || !order) {
     return (
       <div className="max-w-4xl mx-auto py-8 px-4">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <h1 className="text-xl font-semibold text-red-900 mb-2">Ошибка</h1>
-          <p className="text-red-700">Заказ не найден</p>
+        <div className="border border-red-500/30 rounded-lg p-6 bg-card">
+          <div className="text-red-400 font-mono font-bold text-lg mb-2">[error]</div>
+          <div className="text-muted-foreground">заказ не найден</div>
         </div>
       </div>
     )
@@ -50,53 +52,105 @@ export default async function ManagerOrderDetailPage({
   if (!currentUser) {
     return (
       <div className="max-w-4xl mx-auto py-8 px-4">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <h1 className="text-xl font-semibold text-red-900 mb-2">Ошибка</h1>
-          <p className="text-red-700">Необходимо авторизоваться</p>
+        <div className="border border-red-500/30 rounded-lg p-6 bg-card">
+          <div className="text-red-400 font-mono font-bold text-lg mb-2">[error]</div>
+          <div className="text-muted-foreground">необходимо авторизоваться</div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">{order.title}</h1>
-        <div className="flex items-center space-x-4 text-sm text-gray-600">
-          <span>Статус: {order.status}</span>
+    <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
+      {/* Back link */}
+      <Link
+        href="/manager"
+        className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors font-mono"
+      >
+        <span className="text-primary">←</span>
+        к списку заявок
+      </Link>
+
+      {/* Order header */}
+      <div className="border border-border rounded-lg overflow-hidden bg-card">
+        <div className="px-4 py-3 border-b border-border bg-muted/50">
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-bold text-foreground font-mono">{order.title}</h1>
+            <StatusBadge status={order.status} />
+          </div>
+        </div>
+        <div className="px-4 py-3 space-y-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground font-mono">
+            <span className="text-primary">id:</span>
+            <span>{order.id}</span>
+          </div>
           {order.created_at && (
-            <span>Создан: {new Date(order.created_at).toLocaleDateString('ru-RU')}</span>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground font-mono">
+              <span className="text-primary">created:</span>
+              <span>{new Date(order.created_at).toLocaleDateString('ru-RU')}</span>
+            </div>
+          )}
+          {order.client_user_id && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground font-mono">
+              <span className="text-primary">client_id:</span>
+              <span>{order.client_user_id}</span>
+            </div>
           )}
         </div>
       </div>
 
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Бриф</h2>
-        <BriefDisplay brief={order.structured_brief} />
+      {/* Brief */}
+      <div className="border border-border rounded-lg overflow-hidden bg-card">
+        <div className="px-4 py-3 border-b border-border bg-muted/50">
+          <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
+            бриф
+          </h2>
+        </div>
+        <div className="p-4">
+          <BriefDisplay brief={order.structured_brief} />
+        </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      {/* Forms grid */}
+      <div className="grid md:grid-cols-2 gap-4">
         <AudioUploadForm orderId={order.id} />
         <TextStructureForm orderId={order.id} />
       </div>
 
+      {/* Transcript */}
       {order.transcript && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Транскрипция</h2>
-          <p className="text-gray-700 whitespace-pre-wrap">{order.transcript}</p>
+        <div className="border border-border rounded-lg overflow-hidden bg-card">
+          <div className="px-4 py-3 border-b border-border bg-muted/50">
+            <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
+              транскрипция
+            </h2>
+          </div>
+          <div className="p-4">
+            <pre className="text-sm text-muted-foreground whitespace-pre-wrap font-mono">
+              {order.transcript}
+            </pre>
+          </div>
         </div>
       )}
 
+      {/* Audio */}
       {order.audio_url && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Аудиофайл</h2>
-          <audio controls className="w-full">
-            <source src={order.audio_url} type="audio/ogg" />
-            Ваш браузер не поддерживает аудио.
-          </audio>
+        <div className="border border-border rounded-lg overflow-hidden bg-card">
+          <div className="px-4 py-3 border-b border-border bg-muted/50">
+            <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
+              аудиофайл
+            </h2>
+          </div>
+          <div className="p-4">
+            <audio controls className="w-full">
+              <source src={order.audio_url} type="audio/ogg" />
+              ваш браузер не поддерживает аудио
+            </audio>
+          </div>
         </div>
       )}
 
+      {/* Chat */}
       <ChatWindow orderId={order.id} currentUserId={currentUser.id} currentUserRole={currentUser.role} />
     </div>
   )

@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { api } from '@/lib/api'
 import { AuthTerminal, TerminalInput, TerminalButton } from '@/components/auth'
 
-type Step = 'email' | 'password' | 'confirmPassword' | 'fullName' | 'phone' | 'role' | 'submit'
+type Step = 'email' | 'password' | 'confirmPassword' | 'fullName' | 'phone' | 'role'
 
 export default function RegisterPage() {
   const searchParams = useSearchParams()
@@ -60,7 +60,7 @@ export default function RegisterPage() {
       return
     }
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
+      setError('Пароли не совпадают')
       return
     }
     setError('')
@@ -79,11 +79,6 @@ export default function RegisterPage() {
   const handlePhoneSubmit = () => {
     setError('')
     setStep('role')
-  }
-
-  const handleRoleSubmit = () => {
-    setError('')
-    setStep('submit')
   }
 
   const handleRegister = async () => {
@@ -141,7 +136,7 @@ export default function RegisterPage() {
     if (step !== 'email' && step !== 'password' && step !== 'confirmPassword' && step !== 'fullName' && step !== 'phone') {
       steps.push({ label: 'enter phone', value: formData.phone || '(skipped)' })
     }
-    if (step !== 'email' && step !== 'password' && step !== 'confirmPassword' && step !== 'fullName' && step !== 'phone' && step !== 'role') {
+    if (step !== 'email' && step !== 'password' && step !== 'confirmPassword' && step !== 'fullName' && step !== 'phone') {
       steps.push({ label: 'select role', value: formData.role })
     }
     return steps
@@ -248,29 +243,16 @@ export default function RegisterPage() {
               manager
             </button>
           </div>
-          <button
-            onClick={handleRoleSubmit}
-            className="shrink-0 font-mono text-xs px-2 py-1 rounded border border-border text-terminal-prompt hover:border-primary/40 hover:text-glow-sm transition-colors"
-          >
-            ./confirm
-          </button>
-        </div>
-      )}
-
-      {step === 'submit' && (
-        <div className="space-y-4">
-          <TerminalButton
-            onClick={handleRegister}
-            loading={loading}
-          >
-            ./register --execute
-          </TerminalButton>
-          <button
-            onClick={handleReset}
-            className="text-sm font-mono text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <span className="text-terminal-prompt">$</span> ./reset
-          </button>
+          <p className="text-sm font-mono text-muted-foreground">
+            <span className="text-terminal-comment">//</span> подтвердить{' '}
+            <button
+              onClick={handleRegister}
+              disabled={loading}
+              className="inline-block px-3 py-1.5 rounded-lg bg-card border border-border hover:border-primary/40 transition-colors text-terminal-prompt hover:text-glow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? '⏳ processing...' : '~/register --execute'}
+            </button>
+          </p>
         </div>
       )}
 
