@@ -1,7 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
 import NotificationBell from '@/components/NotificationBell'
 import { LogoutButton } from '@/components/LogoutButton'
+import { VSCodeSidebar } from './components/VSCodeSidebar'
+import { TabManager } from './components/TabManager'
+import { TabProvider } from './components/TabContext'
+import { MainContent } from './components/MainContent'
 
 export default async function ManagerLayout({
   children,
@@ -62,46 +65,25 @@ export default async function ManagerLayout({
         </header>
 
         <div className="flex flex-1">
-          {/* Sidebar */}
-          <aside className="w-48 border-r border-border bg-card/50 p-3 flex flex-col gap-1 sticky top-[45px] h-[calc(100vh-45px)]">
-            <nav className="space-y-1">
-              <Link
-                href="/manager"
-                className="flex items-center gap-2 px-3 py-2 rounded text-sm font-mono text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-              >
-                <span className="text-primary">📋</span>
-                заявки
-              </Link>
-              <Link
-                href="/manager/balance"
-                className="flex items-center gap-2 px-3 py-2 rounded text-sm font-mono text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-              >
-                <span className="text-primary">💰</span>
-                баланс
-              </Link>
-              <Link
-                href="/settings/telegram"
-                className="flex items-center gap-2 px-3 py-2 rounded text-sm font-mono text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-              >
-                <span className="text-primary">⚙️</span>
-                настройки
-              </Link>
-            </nav>
-
-            {/* Quick stats */}
-            <div className="mt-auto pt-4 border-t border-border">
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">статус</div>
-              <div className="flex items-center gap-1.5 text-primary text-xs font-mono">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                онлайн
-              </div>
-            </div>
+          {/* VSCode-style Sidebar with transparent background */}
+          <aside className="w-64 border-r border-border bg-card/50 flex flex-col sticky top-[45px] h-[calc(100vh-45px)]">
+            <VSCodeSidebar />
           </aside>
 
-          {/* Main content */}
-          <main className="flex-1 p-6 font-mono text-sm">
-            {children}
-          </main>
+          {/* Main content area */}
+          <div className="flex-1 flex flex-col">
+            <TabProvider>
+              {/* Tab bar */}
+              <TabManager />
+
+              {/* Main content */}
+              <main className="flex-1 p-6 font-mono text-sm overflow-auto">
+                <MainContent>
+                  {children}
+                </MainContent>
+              </main>
+            </TabProvider>
+          </div>
         </div>
       </div>
     </div>

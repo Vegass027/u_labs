@@ -126,3 +126,8 @@
 .animate-count-up {
   animation: countUp 0.4s ease-out forwards;
 }
+
+.terminal-cursor-block {
+  caret-color: hsl(155 100% 50%);
+  caret-shape: block;
+}

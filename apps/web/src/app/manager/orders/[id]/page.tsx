@@ -5,6 +5,7 @@ import { TextStructureForm } from './TextStructureForm'
 import ChatWindow from '@/components/chat/ChatWindow'
 import Link from 'next/link'
 import { StatusBadge } from '../../components/StatusBadge'
+import { OrderTitleSaver } from './OrderTitleSaver'
 
 async function getCurrentUser() {
   const supabase = createClient()
@@ -62,6 +63,9 @@ export default async function ManagerOrderDetailPage({
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
+      {/* Save order title for tabs */}
+      <OrderTitleSaver orderId={order.id} title={order.title} />
+
       {/* Back link */}
       <Link
         href="/manager"
@@ -79,24 +83,14 @@ export default async function ManagerOrderDetailPage({
             <StatusBadge status={order.status} />
           </div>
         </div>
-        <div className="px-4 py-3 space-y-2">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground font-mono">
-            <span className="text-primary">id:</span>
-            <span>{order.id}</span>
-          </div>
-          {order.created_at && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground font-mono">
-              <span className="text-primary">created:</span>
-              <span>{new Date(order.created_at).toLocaleDateString('ru-RU')}</span>
-            </div>
-          )}
-          {order.client_user_id && (
+        {order.client_user_id && (
+          <div className="px-4 py-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground font-mono">
               <span className="text-primary">client_id:</span>
               <span>{order.client_user_id}</span>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Brief */}
