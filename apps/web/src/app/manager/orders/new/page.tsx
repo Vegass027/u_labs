@@ -93,8 +93,8 @@ export default function NewManagerOrderPage() {
         href="/manager"
         className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors font-mono"
       >
-        <span className="text-primary">←</span>
-        к списку заявок
+        <span className="text-green-500 text-lg">&lt;&lt;&lt;</span>
+        <span className="text-lg font-semibold">Мои заявки</span>
       </Link>
 
       {/* Form container */}

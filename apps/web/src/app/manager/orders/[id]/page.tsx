@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { BriefDisplay } from '@/components/BriefDisplay'
-import { AudioUploadForm } from './AudioUploadForm'
-import { TextStructureForm } from './TextStructureForm'
-import ChatWindow from '@/components/chat/ChatWindow'
+import BriefChat from './BriefChat'
+import OrderChatInput from './OrderChatInput'
+import { Accordion, AccordionItem, AccordionTrigger, AccordionPanel } from '@/components/ui/accordion'
 import Link from 'next/link'
 import { StatusBadge } from '../../components/StatusBadge'
 import { OrderTitleSaver } from './OrderTitleSaver'
@@ -71,8 +71,8 @@ export default async function ManagerOrderDetailPage({
         href="/manager"
         className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors font-mono"
       >
-        <span className="text-primary">←</span>
-        к списку заявок
+        <span className="text-green-500 text-lg">&lt;&lt;&lt;</span>
+        <span className="text-lg font-semibold">Мои заявки</span>
       </Link>
 
       {/* Order header */}
@@ -94,21 +94,15 @@ export default async function ManagerOrderDetailPage({
       </div>
 
       {/* Brief */}
-      <div className="border border-border rounded-lg overflow-hidden bg-card">
+      <div className="border border-border rounded-lg overflow-hidden bg-card terminal-glow">
         <div className="px-4 py-3 border-b border-border bg-muted/50">
           <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
-            бриф
+            <span className="text-[#dcb67a]">&gt;&gt;&gt;</span> Бриф <span className="text-[#dcb67a]">&lt;&lt;&lt;</span>
           </h2>
         </div>
-        <div className="p-4">
+        <div className="p-4 scanline">
           <BriefDisplay brief={order.structured_brief} />
         </div>
-      </div>
-
-      {/* Forms grid */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <AudioUploadForm orderId={order.id} />
-        <TextStructureForm orderId={order.id} />
       </div>
 
       {/* Transcript */}
@@ -145,7 +139,31 @@ export default async function ManagerOrderDetailPage({
       )}
 
       {/* Chat */}
-      <ChatWindow orderId={order.id} currentUserId={currentUser.id} currentUserRole={currentUser.role} />
+      <Accordion className="border border-border rounded-lg overflow-hidden bg-card terminal-glow">
+        <AccordionItem value="chat">
+          <AccordionTrigger className="px-4 py-3 bg-muted/50 hover:bg-muted/70 transition-colors [&_[data-slot=accordion-indicator]]:hidden items-center">
+            <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
+              <span className="text-green-500">&gt;&gt;&gt;</span> Чат с клиентом <span className="text-green-500">&lt;&lt;&lt;</span>
+            </h2>
+            <div className="w-8 h-8 rounded border border-green-500/50 flex items-center justify-center bg-green-500/10 group-hover:bg-green-500/20 transition-colors data-[state=open]:rotate-180">
+              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </AccordionTrigger>
+          <AccordionPanel className="px-0">
+            <div className="h-96 overflow-y-auto p-4 space-y-4 bg-transparent">
+              <div className="flex items-center justify-center h-full text-muted-foreground font-mono">
+                сообщений пока нет. начните общение.
+              </div>
+            </div>
+            <OrderChatInput />
+          </AccordionPanel>
+        </AccordionItem>
+      </Accordion>
+
+      {/* Brief Chat with AI */}
+      <BriefChat orderId={order.id} />
     </div>
   )
 }

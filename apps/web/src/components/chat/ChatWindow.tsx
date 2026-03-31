@@ -140,19 +140,19 @@ export default function ChatWindow({ orderId, currentUserId, currentUserRole }: 
   };
 
   return (
-    <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-        <h3 className="font-semibold text-gray-900">Чат заказа</h3>
+    <div className="bg-card rounded-lg shadow border border-border overflow-hidden terminal-glow">
+      <div className="px-4 py-3 border-b border-border bg-muted/50">
+        <h3 className="font-semibold text-foreground font-mono">чат заказа</h3>
       </div>
 
       <div className="h-96 overflow-y-auto p-4 space-y-4">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full text-gray-500">
-            Загрузка сообщений...
+          <div className="flex items-center justify-center h-full text-muted-foreground font-mono">
+            загрузка сообщений...
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-500">
-            Сообщений пока нет. Начните общение.
+          <div className="flex items-center justify-center h-full text-muted-foreground font-mono">
+            сообщений пока нет. начните общение.
           </div>
         ) : (
           messages.map((message) => {
@@ -164,16 +164,16 @@ export default function ChatWindow({ orderId, currentUserId, currentUserRole }: 
               >
                 <div
                   className={`max-w-[70%] rounded-lg px-4 py-2 ${
-                    isOwn ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900'
+                    isOwn ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
                   }`}
                 >
-                  <div className="text-xs font-medium mb-1 opacity-75">
+                  <div className="text-xs font-medium mb-1 opacity-75 font-mono">
                     {message.sender_name}
                   </div>
-                  <div className="text-sm whitespace-pre-wrap break-words">
+                  <div className="text-sm whitespace-pre-wrap break-words font-mono">
                     {message.content}
                   </div>
-                  <div className="text-xs mt-1 opacity-75">
+                  <div className="text-xs mt-1 opacity-75 font-mono">
                     {formatTimestamp(message.created_at)}
                   </div>
                 </div>
@@ -185,28 +185,28 @@ export default function ChatWindow({ orderId, currentUserId, currentUserRole }: 
       </div>
 
       {error && (
-        <div className="px-4 py-2 bg-red-50 text-red-600 text-sm">
-          {error}
+        <div className="px-4 py-2 bg-red-500/10 text-red-400 text-sm font-mono">
+          <span className="font-bold">[error]</span> {error}
         </div>
       )}
 
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-border">
         <div className="flex gap-2">
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Введите сообщение... (Enter для отправки, Shift+Enter для новой строки)"
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="введите сообщение... (enter для отправки, shift+enter для новой строки)"
+            className="flex-1 border border-border rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-primary/50 bg-card text-foreground font-mono terminal-cursor-block"
             rows={2}
             disabled={isSending}
           />
           <button
             onClick={sendMessage}
             disabled={!content.trim() || isSending}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 bg-primary/10 text-primary border border-primary/30 rounded-lg hover:bg-primary/20 disabled:bg-muted/30 disabled:cursor-not-allowed transition-colors font-mono"
           >
-            {isSending ? 'Отправка...' : 'Отправить'}
+            {isSending ? 'отправка...' : './send'}
           </button>
         </div>
       </div>
