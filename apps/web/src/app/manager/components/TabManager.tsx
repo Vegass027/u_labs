@@ -66,17 +66,33 @@ export function TabManager() {
       if (e.key?.startsWith('order_title_')) {
         const orderId = e.key.replace('order_title_', '')
         const orderPath = `/manager/orders/${orderId}`
-        
-        setTabs(prev => prev.map(tab => 
-          tab.href === orderPath 
+
+        setTabs(prev => prev.map(tab =>
+          tab.href === orderPath
             ? { ...tab, filename: `${e.newValue}.ts` }
             : tab
         ))
       }
     }
 
+    const handleCustomEvent = (e: CustomEvent) => {
+      if (e.detail?.orderId && e.detail?.title) {
+        const orderPath = `/manager/orders/${e.detail.orderId}`
+
+        setTabs(prev => prev.map(tab =>
+          tab.href === orderPath
+            ? { ...tab, filename: `${e.detail.title}.ts` }
+            : tab
+        ))
+      }
+    }
+
     window.addEventListener('storage', handleStorageChange)
-    return () => window.removeEventListener('storage', handleStorageChange)
+    window.addEventListener('orderTitleUpdated', handleCustomEvent as EventListener)
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('orderTitleUpdated', handleCustomEvent as EventListener)
+    }
   }, [])
 
   const handleCloseTab = (tabId: string) => {

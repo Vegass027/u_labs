@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export function TextStructureForm({ orderId }: { orderId: string }) {
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -37,7 +39,7 @@ export function TextStructureForm({ orderId }: { orderId: string }) {
         return
       }
 
-      window.location.reload()
+      router.refresh()
     } catch {
       setError('произошла ошибка')
       setLoading(false)

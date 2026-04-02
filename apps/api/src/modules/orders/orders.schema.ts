@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { OrderStatus } from '@agency/types'
+import type { OrderStatus, ManagerStatus } from '@agency/types'
 
 export const createOrderSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(200),
@@ -12,7 +12,7 @@ export const createManagerOrderSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(200),
   raw_text: z.string().optional(),
   client_name: z.string().min(1, 'Client name is required'),
-  client_email: z.string().email('Invalid email address'),
+  client_email: z.string().email('Invalid email address').optional(),
 })
 
 export type CreateManagerOrderInput = z.infer<typeof createManagerOrderSchema>
@@ -24,6 +24,14 @@ export const updateOrderStatusSchema = z.object({
 })
 
 export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>
+
+export const updateManagerStatusSchema = z.object({
+  manager_status: z.enum(['brief_ready', 'negotiation', 'contract', 'cancelled'], {
+    errorMap: () => ({ message: 'Invalid manager status' }),
+  }),
+})
+
+export type UpdateManagerStatusInput = z.infer<typeof updateManagerStatusSchema>
 
 export const setOrderPriceSchema = z.object({
   price: z.number().positive('Price must be a positive number'),
@@ -38,3 +46,9 @@ export const listOrdersSchema = z.object({
 })
 
 export type ListOrdersInput = z.infer<typeof listOrdersSchema>
+
+export const updateRawTextSchema = z.object({
+  raw_text: z.string(),
+})
+
+export type UpdateRawTextInput = z.infer<typeof updateRawTextSchema>

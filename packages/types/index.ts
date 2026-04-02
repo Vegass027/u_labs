@@ -26,6 +26,8 @@ export interface User {
 
 export type OrderStatus = 'new' | 'reviewing' | 'proposal_sent' | 'contract_signed' | 'in_development' | 'done' | 'rejected'
 
+export type ManagerStatus = 'brief_ready' | 'negotiation' | 'contract' | 'cancelled'
+
 export interface StructuredBrief {
   pain: string | null
   current_process: string | null
@@ -43,9 +45,12 @@ export interface StructuredBrief {
 export interface Order {
   id: string
   client_user_id?: string | null
+  client_name?: string | null
+  client_contact?: string | null
   manager_user_id?: string | null
   title: string
   status: OrderStatus
+  manager_status?: ManagerStatus | null
   price?: number | null
   manager_commission?: number | null
   raw_text?: string | null

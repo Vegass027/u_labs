@@ -7,19 +7,24 @@ import {
   listManagerOrders,
   listClientOrders,
   updateOrderStatus,
+  updateManagerStatus,
   setOrderPrice,
+  updateOrderRawText,
 } from './orders.service'
 import {
   createOrderSchema,
   createManagerOrderSchema,
   updateOrderStatusSchema,
+  updateManagerStatusSchema,
   setOrderPriceSchema,
   listOrdersSchema,
+  updateRawTextSchema,
 } from './orders.schema'
 import { AppError } from '../../utils/errors'
 import { logger } from '../../utils/logger'
 import { requireAuth } from '../../middleware/auth.middleware'
 import { requireRole } from '../../middleware/role.middleware'
+import { supabase } from '../../db/client'
 
 interface CreateOrderBody {
   title: string
@@ -98,6 +103,83 @@ export async function ordersRoutes(fastify: FastifyInstance) {
           return reply.status(error.statusCode).send({ error: error.message, code: error.code })
         }
         logger.error({ error }, 'Unexpected error in GET /api/manager/orders')
+        return reply.status(500).send({ error: 'Internal server error' })
+      }
+    }
+  )
+
+  fastify.patch(
+    '/api/manager/orders/:id/manager-status',
+    { preHandler: [requireAuth, requireRole('manager')] },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      try {
+        if (!req.user) {
+          return reply.status(401).send({ error: 'Unauthorized' })
+        }
+        const { id } = req.params as { id: string }
+        const validatedInput = updateManagerStatusSchema.parse(req.body)
+        const order = await updateManagerStatus(id, validatedInput.manager_status, req.user.id)
+        return reply.send(order)
+      } catch (error) {
+        if (error instanceof AppError) {
+          return reply.status(error.statusCode).send({ error: error.message, code: error.code })
+        }
+        logger.error({ error }, 'Unexpected error in PATCH /api/manager/orders/:id/manager-status')
+        return reply.status(500).send({ error: 'Internal server error' })
+      }
+    }
+  )
+
+  fastify.patch(
+    '/api/manager/orders/:id/raw_text',
+    { preHandler: [requireAuth, requireRole('manager', 'owner')] },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      try {
+        if (!req.user) {
+          return reply.status(401).send({ error: 'Unauthorized' })
+        }
+        const { id } = req.params as { id: string }
+        const validatedInput = updateRawTextSchema.parse(req.body)
+        const order = await updateOrderRawText(id, validatedInput.raw_text, req.user.id)
+        return reply.send(order)
+      } catch (error) {
+        if (error instanceof AppError) {
+          return reply.status(error.statusCode).send({ error: error.message, code: error.code })
+        }
+        logger.error({ error }, 'Unexpected error in PATCH /api/manager/orders/:id/raw_text')
+        return reply.status(500).send({ error: 'Internal server error' })
+      }
+    }
+  )
+
+  fastify.delete(
+    '/api/manager/orders/:id/ai-chat',
+    { preHandler: [requireAuth, requireRole('manager', 'owner')] },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      try {
+        if (!req.user) {
+          return reply.status(401).send({ error: 'Unauthorized' })
+        }
+        const { id } = req.params as { id: string }
+
+        const { error: deleteError } = await supabase
+          .from('ai_chat_messages')
+          .delete()
+          .eq('order_id', id)
+
+        if (deleteError) {
+          logger.error({ error: deleteError, orderId: id }, 'Failed to delete AI chat messages')
+          throw new AppError('Failed to delete AI chat', 500)
+        }
+
+        logger.info({ orderId: id }, 'AI chat messages deleted successfully')
+
+        return reply.status(204).send()
+      } catch (error) {
+        if (error instanceof AppError) {
+          return reply.status(error.statusCode).send({ error: error.message, code: error.code })
+        }
+        logger.error({ error }, 'Unexpected error in DELETE /api/manager/orders/:id/ai-chat')
         return reply.status(500).send({ error: 'Internal server error' })
       }
     }

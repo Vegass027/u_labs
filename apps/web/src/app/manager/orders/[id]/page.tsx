@@ -1,27 +1,55 @@
 import { createClient } from '@/lib/supabase/server'
-import { BriefDisplay } from '@/components/BriefDisplay'
+import { BriefSection } from './BriefSection'
 import BriefChat from './BriefChat'
 import OrderChatInput from './OrderChatInput'
+import { ManagerStatusDropdown } from './ManagerStatusDropdown'
+import { ProjectInfoPanel } from './ProjectInfoPanel'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionPanel } from '@/components/ui/accordion'
 import Link from 'next/link'
-import { StatusBadge } from '../../components/StatusBadge'
 import { OrderTitleSaver } from './OrderTitleSaver'
+import { unstable_noStore as noStore } from 'next/cache'
+import type { Document } from '@/app/manager/components/DocumentList'
 
 async function getCurrentUser() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
+  
   if (!user) return null
-
+  
   const { data: userData } = await supabase
     .from('users')
     .select('role')
     .eq('id', user.id)
     .single()
-
+  
   return {
     id: user.id,
     role: userData?.role || 'client'
+  }
+}
+
+async function getOrderDocuments(orderId: string): Promise<Document[]> {
+  const supabase = createClient()
+  
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}/documents`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store',
+      }
+    )
+    
+    if (!response.ok) {
+      return []
+    }
+    
+    const data = await response.json()
+    return data || []
+  } catch (error) {
+    return []
   }
 }
 
@@ -30,14 +58,17 @@ export default async function ManagerOrderDetailPage({
 }: {
   params: { id: string }
 }) {
+  noStore()
   const supabase = createClient()
   const currentUser = await getCurrentUser()
-
+  
   const { data: order, error } = await supabase
     .from('orders')
     .select('*')
     .eq('id', params.id)
     .single()
+  
+  const documents = await getOrderDocuments(params.id)
 
   if (error || !order) {
     return (
@@ -66,44 +97,65 @@ export default async function ManagerOrderDetailPage({
       {/* Save order title for tabs */}
       <OrderTitleSaver orderId={order.id} title={order.title} />
 
-      {/* Back link */}
-      <Link
-        href="/manager"
-        className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors font-mono"
-      >
-        <span className="text-green-500 text-lg">&lt;&lt;&lt;</span>
-        <span className="text-lg font-semibold">Мои заявки</span>
-      </Link>
-
-      {/* Order header */}
-      <div className="border border-border rounded-lg overflow-hidden bg-card">
-        <div className="px-4 py-3 border-b border-border bg-muted/50">
-          <div className="flex items-center justify-between">
-            <h1 className="text-lg font-bold text-foreground font-mono">{order.title}</h1>
-            <StatusBadge status={order.status} />
+      {/* Back link with order header */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono mb-4">
+        <Link
+          href="/manager"
+          className="inline-flex items-center gap-2 hover:text-foreground transition-colors"
+        >
+          <span className="text-green-500 text-lg">&lt;&lt;&lt;</span>
+          <span className="text-lg font-semibold">Мои заявки</span>
+        </Link>
+        <span className="text-[#dcb67a]">𖣔</span>
+        <div className="border border-border rounded-lg bg-card flex-1">
+          <div className="px-4 py-2 border-b border-border bg-muted/50">
+              <div className="flex items-center justify-between">
+                <h1 className="text-lg font-bold text-foreground font-mono">{order.title}</h1>
+                <ManagerStatusDropdown orderId={order.id} currentStatus={order.manager_status} />
+              </div>
           </div>
-        </div>
-        {order.client_user_id && (
-          <div className="px-4 py-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground font-mono">
-              <span className="text-primary">client_id:</span>
-              <span>{order.client_user_id}</span>
+          {order.client_user_id && (
+            <div className="px-4 py-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground font-mono">
+                <span className="text-primary">client_id:</span>
+                <span>{order.client_user_id}</span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-
+      
+      {/* Project Info Panel */}
+      <ProjectInfoPanel
+        price={order.price}
+        documents={documents}
+        orderId={order.id}
+      />
+      
       {/* Brief */}
-      <div className="border border-border rounded-lg overflow-hidden bg-card terminal-glow">
-        <div className="px-4 py-3 border-b border-border bg-muted/50">
-          <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
-            <span className="text-[#dcb67a]">&gt;&gt;&gt;</span> Бриф <span className="text-[#dcb67a]">&lt;&lt;&lt;</span>
-          </h2>
-        </div>
-        <div className="p-4 scanline">
-          <BriefDisplay brief={order.structured_brief} />
-        </div>
-      </div>
+      <Accordion className="border border-border rounded-lg overflow-visible bg-card terminal-glow">
+        <AccordionItem value="brief">
+          <AccordionTrigger className="px-4 py-3 bg-muted/50 hover:bg-muted/70 transition-colors [&_[data-slot=accordion-indicator]]:hidden items-center">
+            <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
+              <span className="text-[#dcb67a]">&gt;&gt;&gt;</span> Бриф <span className="text-[#dcb67a]">&lt;&lt;&lt;</span>
+            </h2>
+            <div className="w-8 h-8 rounded border border-[#dcb67a]/50 flex items-center justify-center bg-[#dcb67a]/10 group-hover:bg-[#dcb67a]/20 transition-colors data-[state=open]:rotate-180">
+              <svg className="w-4 h-4 text-[#dcb67a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </AccordionTrigger>
+          <AccordionPanel className="px-0 overflow-visible">
+            <div className="p-4">
+              <BriefSection
+                orderId={order.id}
+                brief={order.structured_brief}
+                rawText={order.raw_text}
+              />
+            </div>
+          </AccordionPanel>
+        </AccordionItem>
+      </Accordion>
 
       {/* Transcript */}
       {order.transcript && (
@@ -163,7 +215,28 @@ export default async function ManagerOrderDetailPage({
       </Accordion>
 
       {/* Brief Chat with AI */}
-      <BriefChat orderId={order.id} />
+      <Accordion className="border border-border rounded-lg overflow-hidden bg-card terminal-glow">
+        <AccordionItem value="brief-chat">
+          <AccordionTrigger className="px-4 py-3 bg-muted/50 hover:bg-muted/70 transition-colors [&_[data-slot=accordion-indicator]]:hidden items-center">
+            <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-xs text-muted-foreground font-mono">онлайн</span>
+              </div>
+              <span className="text-sky-400">&gt;&gt;&gt;</span>
+              Чат с Брифером <span className="text-sky-400">&lt;&lt;&lt;</span>
+            </h2>
+            <div className="w-8 h-8 rounded border border-sky-400/50 flex items-center justify-center bg-sky-400/10 group-hover:bg-sky-400/20 transition-colors data-[state=open]:rotate-180">
+              <svg className="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </AccordionTrigger>
+          <AccordionPanel className="px-0">
+            <BriefChat orderId={order.id} />
+          </AccordionPanel>
+        </AccordionItem>
+      </Accordion>
     </div>
   )
 }

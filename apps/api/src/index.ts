@@ -11,6 +11,7 @@ import { messagesRoutes } from './modules/messages/messages.routes'
 import { commissionsRoutes } from './modules/commissions/commissions.routes'
 import { notificationsRoutes } from './modules/notifications/notifications.routes'
 import { telegramRoutes } from './modules/notifications/telegram.routes'
+import { documentsRoutes } from './modules/documents/documents.routes'
 
 const server = Fastify({
   logger: {
@@ -26,8 +27,11 @@ server.register(cors, {
 
 // Multipart для загрузки файлов
 server.register(multipart, {
-  attachFieldsToBody: true,
+  attachFieldsToBody: false,
   sharedSchemaId: 'MultipartFile',
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
 })
 
 // Auth routes
@@ -50,6 +54,9 @@ server.register(notificationsRoutes)
 
 // Telegram webhook routes
 server.register(telegramRoutes)
+
+// Documents routes
+server.register(documentsRoutes)
 
 // Health check
 server.get('/health', async () => {

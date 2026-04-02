@@ -26,10 +26,16 @@ export default async function ManagerLayout({
 
   return (
     <div className="min-h-screen bg-background relative">
-      {/* Background grid */}
-      <div className="fixed inset-0 opacity-[0.03] pointer-events-none" style={{
-        backgroundImage: `linear-gradient(hsl(155 100% 50%) 1px, transparent 1px), linear-gradient(90deg, hsl(155 100% 50%) 1px, transparent 1px)`,
-        backgroundSize: '60px 60px'
+      {/* Background grid of small squares */}
+      <div className="fixed inset-0 opacity-[0.02] pointer-events-none" style={{
+        backgroundImage: `
+          linear-gradient(45deg, hsl(155 100% 50%) 25%, transparent 25%),
+          linear-gradient(-45deg, hsl(155 100% 50%) 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, hsl(155 100% 50%) 75%),
+          linear-gradient(-45deg, transparent 75%, hsl(155 100% 50%) 75%)
+        `,
+        backgroundSize: '20px 20px',
+        backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
       }} />
 
       {/* Terminal window container */}

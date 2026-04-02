@@ -2,8 +2,8 @@ import { supabase, supabaseAdmin } from '../../db/client'
 import { logger } from '../../utils/logger'
 import { AppError, NotFoundError, ForbiddenError } from '../../utils/errors'
 import { config } from '../../config'
-import type { Order, OrderStatus } from '@agency/types'
-import type { CreateOrderInput, CreateManagerOrderInput, ListOrdersInput } from './orders.schema'
+import type { Order, OrderStatus, ManagerStatus } from '@agency/types'
+import type { CreateOrderInput, CreateManagerOrderInput, ListOrdersInput, UpdateManagerStatusInput } from './orders.schema'
 import { notifyNewOrder, notifyStatusChange } from '../notifications/telegram.service'
 import { createNotification } from '../notifications/notifications.service'
 
@@ -64,7 +64,7 @@ export async function createManagerOrder(input: CreateManagerOrderInput, manager
     .from('orders')
     .insert({
       client_name: input.client_name,
-      client_contact: input.client_email,
+      client_contact: input.client_email || null,
       manager_user_id: managerUserId,
       title: input.title,
       raw_text: input.raw_text,
@@ -80,21 +80,23 @@ export async function createManagerOrder(input: CreateManagerOrderInput, manager
 
   logger.info({ orderId: order.id }, 'Manager order created successfully')
 
-  const { data: existingClient } = await supabase
-    .from('users')
-    .select('id')
-    .eq('email', input.client_email)
-    .limit(1)
-    .single()
+  if (input.client_email) {
+    const { data: existingClient } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', input.client_email)
+      .limit(1)
+      .single()
 
-  if (existingClient) {
-    await supabase
-      .from('orders')
-      .update({ client_user_id: existingClient.id })
-      .eq('id', order.id)
-    logger.info({ orderId: order.id, clientId: existingClient.id }, 'Linked existing client to order')
-  } else {
-    await inviteClient(input.client_email, input.client_name, order.id)
+    if (existingClient) {
+      await supabase
+        .from('orders')
+        .update({ client_user_id: existingClient.id })
+        .eq('id', order.id)
+      logger.info({ orderId: order.id, clientId: existingClient.id }, 'Linked existing client to order')
+    } else {
+      await inviteClient(input.client_email, input.client_name, order.id)
+    }
   }
 
   const { data: managerData } = await supabase
@@ -305,4 +307,63 @@ export async function setOrderPrice(orderId: string, price: number, userId: stri
   logger.info({ orderId, price, managerCommission }, 'Order price set successfully')
 
   return data
+}
+
+export async function updateOrderRawText(orderId: string, rawText: string, userId: string): Promise<Order> {
+  logger.info({ orderId, userId }, 'Updating order raw_text')
+
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ 
+      raw_text: rawText,
+      structured_brief: null
+    })
+    .eq('id', orderId)
+    .select()
+    .single()
+
+  if (error || !data) {
+    logger.error({ error, orderId }, 'Failed to update order raw_text')
+    throw new AppError(error?.message || 'Failed to update order raw_text', 500)
+  }
+
+  logger.info({ orderId }, 'Order raw_text updated successfully, structured_brief cleared')
+
+  return data
+}
+
+export async function updateManagerStatus(orderId: string, managerStatus: ManagerStatus, managerUserId: string): Promise<Order> {
+  logger.info({ orderId, managerStatus, managerUserId }, 'Updating manager status')
+
+  const { data: order, error } = await supabase
+    .from('orders')
+    .select('manager_user_id')
+    .eq('id', orderId)
+    .single()
+
+  if (error || !order) {
+    logger.error({ error, orderId }, 'Failed to fetch order')
+    throw new NotFoundError('Order not found')
+  }
+
+  if (order.manager_user_id !== managerUserId) {
+    logger.warn({ orderId, managerUserId, orderManagerId: order.manager_user_id }, 'Manager tried to update status of order they do not own')
+    throw new ForbiddenError('You can only update status of your own orders')
+  }
+
+  const { data: updatedOrder, error: updateError } = await supabase
+    .from('orders')
+    .update({ manager_status: managerStatus })
+    .eq('id', orderId)
+    .select()
+    .single()
+
+  if (updateError || !updatedOrder) {
+    logger.error({ error: updateError, orderId }, 'Failed to update manager status')
+    throw new AppError(updateError?.message || 'Failed to update manager status', 500)
+  }
+
+  logger.info({ orderId, managerStatus }, 'Manager status updated successfully')
+
+  return updatedOrder
 }

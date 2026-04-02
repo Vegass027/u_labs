@@ -35,26 +35,24 @@ async function getManagerOrders(): Promise<Order[]> {
   return data || []
 }
 
-function getStatusColor(status: string): string {
+function getManagerStatusColor(status: string | null | undefined): string {
   const colors: Record<string, string> = {
-    'new': 'text-blue-400',
-    'in_progress': 'text-yellow-400',
-    'review': 'text-purple-400',
-    'done': 'text-green-400',
+    'brief_ready': 'text-primary',
+    'negotiation': 'text-amber-400',
+    'contract': 'text-purple-400',
     'cancelled': 'text-red-400',
   }
-  return colors[status] || 'text-gray-400'
+  return status ? colors[status] || 'text-gray-400' : 'text-gray-400'
 }
 
-function getStatusText(status: string): string {
+function getManagerStatusText(status: string | null | undefined): string {
   const texts: Record<string, string> = {
-    'new': 'Новая',
-    'in_progress': 'В работе',
-    'review': 'На проверке',
-    'done': 'Завершена',
-    'cancelled': 'Отменена',
+    'brief_ready': 'Бриф готов',
+    'negotiation': 'Переговоры',
+    'contract': 'Договор',
+    'cancelled': 'Отклонён',
   }
-  return texts[status] || status
+  return status ? texts[status] || '—' : '—'
 }
 
 export default async function ManagerPage() {
@@ -92,17 +90,17 @@ export default async function ManagerPage() {
             <div>// создайте первую заявку, чтобы начать работу</div>
           </div>
         ) : (
-          <div className="space-y-0 pt-4">
+          <div className="space-y-4 pt-4">
             {orders.map((order) => (
               <Link
                 key={order.id}
                 href={`/manager/orders/${order.id}`}
-                className="flex items-center hover:bg-muted/50 transition-all duration-200 hover:shadow-[0_4px_20px_-4px_rgba(74,222,128,0.3),0_-4px_20px_-4px_rgba(74,222,128,0.3)] rounded px-3 py-4 mb-4 group"
+                className="flex items-center hover:bg-muted/50 transition-all duration-200 hover:shadow-[0_4px_20px_-4px_rgba(74,222,128,0.3),0_-4px_20px_-4px_rgba(74,222,128,0.3)] rounded px-3 py-4 group"
               >
                 {/* Code content with fixed columns */}
                 <div className="flex-1 flex items-center gap-4">
                   {/* Arrow indicator */}
-                  <span className="text-primary/50 text-xs shrink-0">
+                  <span className="text-[#dcb67a] text-xs shrink-0">
                     &gt;&gt;&gt;
                   </span>
 
@@ -111,14 +109,14 @@ export default async function ManagerPage() {
                     {order.title}
                   </span>
 
-                  {/* Status - fixed width */}
-                  <span className={`${getStatusColor(order.status)} w-32 shrink-0`}>
-                    #{getStatusText(order.status)}
+                  {/* Manager status - fixed width */}
+                  <span className={`${getManagerStatusColor(order.manager_status)} w-32 shrink-0`}>
+                    #{getManagerStatusText(order.manager_status)}
                   </span>
 
                   {/* Client - fixed width */}
                   <span className="text-muted-foreground w-48 shrink-0 truncate">
-                    {'{' + (order.client?.full_name || order.client?.email || 'Unknown') + '}'}
+                    {'{' + (order.client_name || order.client?.full_name || order.client?.email || 'Unknown') + '}'}
                   </span>
 
                   {/* Commission - fixed width */}

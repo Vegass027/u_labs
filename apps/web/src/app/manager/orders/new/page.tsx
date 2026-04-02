@@ -59,11 +59,6 @@ export default function NewManagerOrderPage() {
       return
     }
 
-    if (!formData.client_email.trim()) {
-      setError('email клиента обязателен')
-      return
-    }
-
     setLoading(true)
 
     try {
@@ -71,7 +66,7 @@ export default function NewManagerOrderPage() {
         title: formData.title,
         raw_text: formData.raw_text || undefined,
         client_name: formData.client_name,
-        client_email: formData.client_email,
+        client_email: formData.client_email || undefined,
       })
 
       if (error) {
@@ -148,7 +143,7 @@ export default function NewManagerOrderPage() {
           {/* Client Email */}
           <div>
             <label htmlFor="client_email" className="block text-xs text-muted-foreground mb-1">
-              Email клиента
+              Email клиента (опционально)
             </label>
             <div
               className="relative w-full border border-border rounded focus-within:border-primary/50 bg-card cursor-text"
@@ -164,7 +159,6 @@ export default function NewManagerOrderPage() {
                   onChange={handleChange}
                   onFocus={() => handleFocus('client_email')}
                   onBlur={handleBlur}
-                  required
                   className="absolute inset-0 w-full h-full bg-transparent border-none outline-none text-transparent caret-transparent font-mono text-sm cursor-text z-10"
                 />
                 <span className="font-mono text-sm whitespace-pre pointer-events-none text-terminal-prompt">
