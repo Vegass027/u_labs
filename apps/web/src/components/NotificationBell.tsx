@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
@@ -20,6 +20,8 @@ export default function NotificationBell({ currentUserId }: { currentUserId: str
   const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
   const supabase = createClient();
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const isButtonClickedRef = useRef(false);
 
   useEffect(() => {
     fetchNotifications();
@@ -29,6 +31,26 @@ export default function NotificationBell({ currentUserId }: { currentUserId: str
       supabase.channel('notifications').unsubscribe();
     };
   }, [currentUserId]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isButtonClickedRef.current) {
+        isButtonClickedRef.current = false;
+        return;
+      }
+      
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const fetchNotifications = async () => {
     try {
@@ -100,9 +122,13 @@ export default function NotificationBell({ currentUserId }: { currentUserId: str
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={(e) => {
+          isButtonClickedRef.current = true;
+          e.stopPropagation();
+          setIsOpen(prev => !prev);
+        }}
         className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
       >
         <svg

@@ -21,7 +21,7 @@ export function VSCodeSidebar() {
         </SidebarFolder>
 
         <SidebarFolder name="Настройки" defaultOpen={false}>
-          <SidebarFile filename="settings.ts" href="/settings/telegram" />
+          <SidebarFile filename="profile.ts" href="/manager/profile" />
         </SidebarFolder>
       </div>
 

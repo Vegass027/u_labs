@@ -51,4 +51,32 @@ export const api = {
   patch: <T>(endpoint: string, body: any) =>
     apiRequest<T>(endpoint, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: <T>(endpoint: string) => apiRequest<T>(endpoint, { method: 'DELETE' }),
+  upload: async <T>(endpoint: string, formData: FormData): Promise<ApiResponse<T>> => {
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+
+    const headers: Record<string, string> = {}
+
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        return { error: data.error || 'Request failed', code: data.code }
+      }
+
+      return { data }
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : 'Network error' }
+    }
+  },
 }

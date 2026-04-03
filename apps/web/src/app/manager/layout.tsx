@@ -1,10 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
-import NotificationBell from '@/components/NotificationBell'
-import { LogoutButton } from '@/components/LogoutButton'
 import { VSCodeSidebar } from './components/VSCodeSidebar'
 import { TabManager } from './components/TabManager'
 import { TabProvider } from './components/TabContext'
 import { MainContent } from './components/MainContent'
+import ManagerHeader from './components/ManagerHeader'
 
 export default async function ManagerLayout({
   children,
@@ -20,7 +19,7 @@ export default async function ManagerLayout({
 
   const { data: userData } = await supabase
     .from('users')
-    .select('id, full_name, email, role')
+    .select('id, full_name, email, role, avatar_url')
     .eq('id', user.id)
     .single()
 
@@ -55,32 +54,29 @@ export default async function ManagerLayout({
           </span>
 
           {/* Right side actions */}
-          <div className="ml-auto flex items-center gap-3">
-            <NotificationBell currentUserId={user.id} />
-            <div className="flex items-center gap-2 px-2 py-1 rounded bg-card border border-border">
-              <div className="w-6 h-6 rounded bg-primary/20 flex items-center justify-center text-[10px] text-primary font-mono">
-                {userData?.full_name?.[0] || 'M'}
-              </div>
-              <div className="text-xs">
-                <p className="text-foreground font-medium">{userData?.full_name || 'Manager'}</p>
-                <p className="text-muted-foreground text-[10px]">{userData?.email}</p>
-              </div>
-            </div>
-            <LogoutButton />
+          <div className="ml-auto">
+            <ManagerHeader
+              currentUserId={user.id}
+              userName={userData?.full_name || 'Manager'}
+              userEmail={userData?.email || ''}
+              avatarUrl={userData?.avatar_url}
+            />
           </div>
         </header>
 
-        <div className="flex flex-1">
+        <div className="flex flex-1 overflow-hidden">
           {/* VSCode-style Sidebar with transparent background */}
-          <aside className="w-64 border-r border-border bg-card/50 flex flex-col sticky top-[45px] h-[calc(100vh-45px)]">
+          <aside className="w-64 border-r border-border bg-card/50 flex flex-col overflow-y-auto">
             <VSCodeSidebar />
           </aside>
 
           {/* Main content area */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
             <TabProvider>
               {/* Tab bar */}
-              <TabManager />
+              <div className="flex-shrink-0 border-b border-border bg-card/50">
+                <TabManager />
+              </div>
 
               {/* Main content */}
               <main className="flex-1 p-6 font-mono text-sm overflow-auto">
