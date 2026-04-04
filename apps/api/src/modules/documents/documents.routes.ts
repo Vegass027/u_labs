@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify'
 import { requireAuth } from '../../middleware/auth.middleware'
 import { requireRole } from '../../middleware/role.middleware'
 import { listDocumentsSchema, uploadDocumentSchema } from './documents.schema'
-import { listOrderDocuments, uploadOrderDocument } from './documents.service'
+import { listOrderDocuments, uploadOrderDocument, deleteOrderDocument } from './documents.service'
 import { supabase } from '../../db/client'
 import { AppError } from '../../utils/errors'
 import { UserRole } from '@agency/types'
@@ -100,6 +100,35 @@ export async function documentsRoutes(fastify: FastifyInstance) {
       )
 
       return reply.send(result)
+    }
+  )
+
+  fastify.delete(
+    '/api/orders/:id/documents/:filepath',
+    {
+      preHandler: [requireAuth, requireRole('owner', 'manager')],
+    },
+    async (req: any, reply: any) => {
+      const { id: orderId, filepath } = req.params as { id: string; filepath: string }
+      const userId = req.user.id
+      const userRole = req.user.role
+
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .select('id, manager_user_id')
+        .eq('id', orderId)
+        .single()
+
+      if (orderError || !order) {
+        throw new AppError('Order not found', 404)
+      }
+
+      if (order.manager_user_id !== userId && userRole !== 'owner') {
+        throw new AppError('Access denied', 403)
+      }
+
+      await deleteOrderDocument(orderId, decodeURIComponent(filepath))
+      return reply.send({ success: true })
     }
   )
 }

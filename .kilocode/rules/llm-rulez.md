@@ -75,6 +75,10 @@
 - Не писать middleware логику внутри компонентов.
 - Не создавать новый файл если логика помещается в существующий модуль.
 - Не использовать `console.log` в продакшн коде. Только структурированный логгер (pino).
+- Не вызывать `revalidatePath()` в клиентских компонентах (`'use client'`) — это серверная функция. Для инвалидации кэша после мутаций использовать Server Actions (`'use server'`).
+- Не использовать `getPublicUrl()` для приватных Storage бакетов — только `createSignedUrl()` с временем жизни.
+- Не хранить оригинальные имена файлов в Storage metadata — metadata ненадёжно возвращается при `list()`. Хранить в отдельной таблице БД (`order_documents`).
+- Не делать `fetch('/api/...')` с относительным путём в компонентах — это Next.js route handler, не Fastify. Всегда использовать `api.get/post/patch` из `lib/api.ts` который указывает на `NEXT_PUBLIC_API_URL`.
 
 ---
 
@@ -141,3 +145,14 @@ export type CreateOrderInput = z.infer<typeof createOrderSchema>
 - RLS политики уже написаны в schema.sql. Не обходить их через `service_role` ключ без крайней необходимости.
 - Realtime подписки — только на клиенте, не на сервере.
 - Storage buckets: `audio-uploads` для голосовых, `attachments` для файлов заявок.
+- Cookie формат: Supabase SSR использует chunked cookies (`auth-token.0`, `auth-token.1`) или base64 формат. Middleware и Server Components должны уметь читать оба формата. Никогда не парсить cookies вручную в middleware — использовать `createServerClient` из `@supabase/ssr` с правильным `getAll/setAll`.
+- Server Components не могут читать сессию через `supabase.auth.getSession()` напрямую — всегда сначала `getUser()`, потом при необходимости `getSession()` для получения токена.
+
+
+## Auth-специфичные правила
+
+- Логин/регистрация — только через Supabase Auth (`supabase.auth.signInWithPassword`). Свой JWT не использовать.
+- Роль пользователя — читать только из `user.app_metadata.role` (auth.users). Никогда из `public.users.role`.
+- Middleware — использовать `jwtDecode` для чтения роли из cookie без HTTP запроса к Supabase. Chunked cookies собирать из `.0` и `.1` частей перед декодированием.
+- Server Actions для мутаций — всегда получать токен через `supabase.auth.getSession()` после `getUser()` и передавать в `Authorization` заголовке к Fastify API.
+- `auth.users` содержит обязательные поля (`email_change`, `phone_change`, `recovery_token` и др.) которые не могут быть NULL — при ручном создании пользователей всегда заполнять пустыми строками.

@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { api } from '@/lib/api'
-import { useRouter } from 'next/navigation'
+import { setOrderPrice } from '@/app/actions/orders'
 
 interface SetPriceFormProps {
   orderId: string
@@ -13,7 +12,6 @@ export function SetPriceForm({ orderId, currentPrice }: SetPriceFormProps) {
   const [price, setPrice] = useState(currentPrice?.toString() || '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -21,31 +19,26 @@ export function SetPriceForm({ orderId, currentPrice }: SetPriceFormProps) {
 
     const priceValue = parseFloat(price)
     if (isNaN(priceValue) || priceValue <= 0) {
-      setError('Price must be a positive number')
+      setError('цена должна быть положительным числом')
       return
     }
 
     setLoading(true)
 
-    try {
-      const { error } = await api.patch(`/api/admin/orders/${orderId}/price`, { price: priceValue })
+    const result = await setOrderPrice(orderId, priceValue)
 
-      if (error) {
-        setError(error)
-        return
-      }
-
-      router.refresh()
-    } catch (err) {
-      setError('An unexpected error occurred')
-    } finally {
-      setLoading(false)
+    if (result.error) {
+      setError(result.error)
     }
+
+    setLoading(false)
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex-1">
-      <h3 className="text-sm font-medium text-gray-700 mb-2">Set Price</h3>
+      <h3 className="text-sm font-bold text-foreground font-mono mb-2">
+        <span className="text-[#dcb67a]">//</span> Set Price
+      </h3>
       <div className="flex gap-2">
         <input
           type="number"
@@ -53,19 +46,24 @@ export function SetPriceForm({ orderId, currentPrice }: SetPriceFormProps) {
           min="0"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
-          placeholder="Enter price"
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 px-3 py-2 border border-border rounded text-sm focus:outline-none focus:border-primary/50 bg-card font-mono terminal-cursor-block text-green-500"
           disabled={loading}
         />
         <button
           type="submit"
           disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-2 px-3 py-2 bg-primary/10 border border-primary/30 text-primary rounded text-sm font-mono hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {loading ? 'Setting...' : 'Set Price'}
+          <span className="text-primary">
+            {loading ? 'устанавливаем...' : './set-price'}
+          </span>
         </button>
       </div>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && (
+        <div className="mt-2 text-sm font-mono text-red-400 px-3 py-2 rounded bg-red-500/10 border border-red-500/20">
+          <span className="font-bold">[error]</span> {error}
+        </div>
+      )}
     </form>
   )
 }

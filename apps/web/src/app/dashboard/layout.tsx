@@ -1,72 +1,93 @@
-import { createClient } from '@/lib/supabase/server';
-import Link from 'next/link';
-import NotificationBell from '@/components/NotificationBell';
-import { LogoutButton } from '@/components/LogoutButton';
+import { createClient } from '@/lib/supabase/server'
+import { TabProvider } from '../manager/components/TabContext'
+import { MainContent } from '../manager/components/MainContent'
+import OwnerHeader from './components/OwnerHeader'
+import { OwnerSidebar } from './components/OwnerSidebar'
+import { OwnerTabManager } from './components/OwnerTabManager'
 
 export default async function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const supabase = await createClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
 
   if (!user) {
-    return null;
+    return null
   }
 
-  const { data: userData } = await supabase
+  const { data: userData, error: userDataError } = await supabase
     .from('users')
-    .select('id, full_name, email, role')
+    .select('id, full_name, email, role, avatar_url')
     .eq('id', user.id)
-    .single();
+    .single()
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center space-x-8">
-              <Link href="/dashboard" className="text-xl font-bold text-gray-900">
-                Agency Dashboard
-              </Link>
-              <div className="flex space-x-4">
-                <Link
-                  href="/dashboard"
-                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Заявки
-                </Link>
-                <Link
-                  href="/dashboard/commissions"
-                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Комиссии
-                </Link>
-                <Link
-                  href="/settings/telegram"
-                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Настройки
-                </Link>
+    <div className="min-h-screen bg-background relative">
+      {/* Background grid of small squares */}
+      <div className="fixed inset-0 opacity-[0.02] pointer-events-none" style={{
+        backgroundImage: `
+          linear-gradient(45deg, hsl(155 100% 50%) 25%, transparent 25%),
+          linear-gradient(-45deg, hsl(155 100% 50%) 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, hsl(155 100% 50%) 75%),
+          linear-gradient(-45deg, transparent 75%, hsl(155 100% 50%) 75%)
+        `,
+        backgroundSize: '20px 20px',
+        backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
+      }} />
+
+      {/* Terminal window container */}
+      <div className="relative z-10 flex flex-col min-h-screen">
+        {/* Header bar */}
+        <header className="flex items-center gap-2 px-4 py-2.5 bg-terminal-header border-b border-border sticky top-0 z-50">
+          {/* Traffic lights */}
+          <div className="flex gap-1.5">
+            <div className="w-3 h-3 rounded-full" style={{ background: "hsl(0 70% 55%)" }} />
+            <div className="w-3 h-3 rounded-full" style={{ background: "hsl(40 80% 55%)" }} />
+            <div className="w-3 h-3 rounded-full" style={{ background: "hsl(120 60% 45%)" }} />
+          </div>
+
+          {/* Title */}
+          <span className="font-mono text-xs text-muted-foreground ml-2">
+            ~/owner-dashboard — панель владельца
+          </span>
+
+          {/* Right side actions */}
+          <div className="ml-auto">
+            <OwnerHeader
+              currentUserId={user.id}
+              userName={userData?.full_name || 'Owner'}
+              userEmail={userData?.email || ''}
+              avatarUrl={userData?.avatar_url}
+            />
+          </div>
+        </header>
+
+        <div className="flex flex-1 overflow-hidden">
+          {/* VSCode-style Sidebar with transparent background */}
+          <aside className="w-64 border-r border-border bg-card/50 flex flex-col overflow-y-auto">
+            <OwnerSidebar />
+          </aside>
+
+          {/* Main content area */}
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <TabProvider>
+              {/* Tab bar */}
+              <div className="flex-shrink-0 border-b border-border bg-card/50">
+                <OwnerTabManager />
               </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <NotificationBell currentUserId={user.id} />
-              <div className="flex items-center space-x-2">
-                <div className="text-sm">
-                  <p className="font-medium text-gray-900">{userData?.full_name || 'Owner'}</p>
-                  <p className="text-gray-500 text-xs">{userData?.email}</p>
-                </div>
-              </div>
-              <LogoutButton />
-            </div>
+
+              {/* Main content */}
+              <main className="flex-1 p-6 font-mono text-sm overflow-auto">
+                <MainContent>
+                  {children}
+                </MainContent>
+              </main>
+            </TabProvider>
           </div>
         </div>
-      </nav>
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {children}
-      </main>
+      </div>
     </div>
-  );
+  )
 }

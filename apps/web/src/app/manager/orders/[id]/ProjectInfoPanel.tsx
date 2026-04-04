@@ -55,7 +55,7 @@ export function ProjectInfoPanel({ price, documents, orderId }: ProjectInfoPanel
             Документы по проекту
           </h3>
         </div>
-        <DocumentList documents={documents} onDownload={handleDownload} />
+        <DocumentList documents={documents} onDownload={handleDownload} canDelete={false} />
       </div>
     </div>
   )

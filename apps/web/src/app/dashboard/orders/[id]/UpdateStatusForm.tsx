@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { api } from '@/lib/api'
-import { useRouter } from 'next/navigation'
+import { updateOrderStatus } from '@/app/actions/orders'
 import type { OrderStatus } from '@agency/types'
 
 interface UpdateStatusFormProps {
@@ -10,65 +9,114 @@ interface UpdateStatusFormProps {
   currentStatus: OrderStatus
 }
 
-export function UpdateStatusForm({ orderId, currentStatus }: UpdateStatusFormProps) {
-  const [status, setStatus] = useState(currentStatus)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const router = useRouter()
+const statusLabels: Record<OrderStatus, string> = {
+  new: 'новая',
+  reviewing: 'на рассмотрении',
+  proposal_sent: 'предложение отправлено',
+  contract_signed: 'договор подписан',
+  in_development: 'в разработке',
+  done: 'выполнено',
+  rejected: 'отклонено',
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+const statusStyles: Record<OrderStatus, string> = {
+  new: 'border border-blue-500/50 text-blue-400',
+  reviewing: 'border border-amber-500/50 text-amber-400',
+  proposal_sent: 'border border-purple-500/50 text-purple-400',
+  contract_signed: 'border border-green-500/50 text-green-400',
+  in_development: 'border border-cyan-500/50 text-cyan-400',
+  done: 'border border-emerald-500/50 text-emerald-400',
+  rejected: 'border border-red-500/50 text-red-400',
+}
+
+const statusArrowColors: Record<OrderStatus, string> = {
+  new: 'text-blue-400',
+  reviewing: 'text-amber-400',
+  proposal_sent: 'text-purple-400',
+  contract_signed: 'text-green-400',
+  in_development: 'text-cyan-400',
+  done: 'text-emerald-400',
+  rejected: 'text-red-400',
+}
+
+const statusDots: Record<OrderStatus, string> = {
+  new: 'bg-blue-400',
+  reviewing: 'bg-amber-400',
+  proposal_sent: 'bg-purple-400',
+  contract_signed: 'bg-green-400',
+  in_development: 'bg-cyan-400',
+  done: 'bg-emerald-400',
+  rejected: 'bg-red-400',
+}
+
+export function UpdateStatusForm({ orderId, currentStatus }: UpdateStatusFormProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [status, setStatus] = useState<OrderStatus>(currentStatus)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleStatusChange = async (newStatus: OrderStatus) => {
+    if (newStatus === status || isUpdating) return
+
+    setIsUpdating(true)
     setError('')
 
-    if (status === currentStatus) {
-      return
+    const result = await updateOrderStatus(orderId, newStatus)
+
+    if (result.error) {
+      setError(result.error)
+    } else {
+      setStatus(newStatus)
+      setIsOpen(false)
     }
 
-    setLoading(true)
-
-    try {
-      const { error } = await api.patch(`/api/admin/orders/${orderId}/status`, { status })
-
-      if (error) {
-        setError(error)
-        return
-      }
-
-      router.refresh()
-    } catch (err) {
-      setError('An unexpected error occurred')
-    } finally {
-      setLoading(false)
-    }
+    setIsUpdating(false)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex-1">
-      <h3 className="text-sm font-medium text-gray-700 mb-2">Update Status</h3>
-      <div className="flex gap-2">
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value as OrderStatus)}
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          disabled={loading}
-        >
-          <option value="new">New</option>
-          <option value="reviewing">Reviewing</option>
-          <option value="proposal_sent">Proposal Sent</option>
-          <option value="contract_signed">Contract Signed</option>
-          <option value="in_development">In Development</option>
-          <option value="done">Done</option>
-          <option value="rejected">Rejected</option>
-        </select>
+    <div className="flex-1">
+      <h3 className="text-sm font-bold text-foreground font-mono mb-2">
+        <span className="text-[#dcb67a]">//</span> Update Status
+      </h3>
+      <div className="relative z-50">
         <button
-          type="submit"
-          disabled={loading || status === currentStatus}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={() => setIsOpen(!isOpen)}
+          disabled={isUpdating}
+          className={`h-10 w-full rounded flex items-center justify-between px-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-mono text-sm ${statusStyles[status]}`}
         >
-          {loading ? 'Updating...' : 'Update'}
+          <div className="flex items-center gap-2">
+            <span className={`w-1.5 h-1.5 rounded-full ${statusDots[status]}`} />
+            <span className="uppercase tracking-wider">{statusLabels[status]}</span>
+          </div>
+          <svg className={`w-4 h-4 ${statusArrowColors[status]} transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
         </button>
+
+        {isOpen && (
+          <>
+            <div className="absolute inset-0 z-40" onClick={() => setIsOpen(false)} />
+            <div className="absolute right-0 top-full mt-1 z-50 w-full bg-card border border-border rounded shadow-lg overflow-hidden">
+              {Object.entries(statusLabels).map(([statusKey, label]) => (
+                <button
+                  key={statusKey}
+                  onClick={() => handleStatusChange(statusKey as OrderStatus)}
+                  disabled={isUpdating || status === statusKey}
+                  className="w-full text-left px-3 py-2 text-sm font-mono hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${statusDots[statusKey as OrderStatus]}`} />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-    </form>
+      {error && (
+        <div className="mt-2 text-sm font-mono text-red-400 px-3 py-2 rounded bg-red-500/10 border border-red-500/20">
+          <span className="font-bold">[error]</span> {error}
+        </div>
+      )}
+    </div>
   )
 }

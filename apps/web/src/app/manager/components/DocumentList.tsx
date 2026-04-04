@@ -5,15 +5,19 @@ import { cn } from '@/lib/utils'
 
 export interface Document {
   name: string
+  path: string
   id: string
   size: number
-  created_at: string
+  created_at: string | null
+  updated_at: string | null
   publicUrl: string
 }
 
 interface DocumentListProps {
   documents: Document[]
   onDownload?: (url: string, name: string) => void
+  canDelete?: boolean
+  onDelete?: (doc: Document) => void
 }
 
 function formatFileSize(bytes: number): string {
@@ -22,7 +26,8 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function formatDate(dateString: string): string {
+function formatDate(dateString: string | null): string {
+  if (!dateString) return ''
   return new Date(dateString).toLocaleDateString('ru-RU', {
     day: '2-digit',
     month: '2-digit',
@@ -30,7 +35,7 @@ function formatDate(dateString: string): string {
   })
 }
 
-export function DocumentList({ documents, onDownload }: DocumentListProps) {
+export function DocumentList({ documents, onDownload, canDelete = false, onDelete }: DocumentListProps) {
   if (documents.length === 0) {
     return (
       <div className="text-muted-foreground text-sm font-mono">
@@ -40,29 +45,30 @@ export function DocumentList({ documents, onDownload }: DocumentListProps) {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="flex flex-wrap gap-2">
       {documents.map((doc) => (
-        <div
-          key={doc.id}
-          className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group"
-        >
-          <FileIcon filename={doc.name} className="text-primary" />
-          
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium font-mono truncate">
-              {doc.name}
-            </div>
-            <div className="text-xs text-muted-foreground font-mono">
-              {formatFileSize(doc.size)} • {formatDate(doc.created_at)}
-            </div>
-          </div>
-
+        <div key={doc.id} className="relative w-20 h-20 group">
           <button
             onClick={() => onDownload?.(doc.publicUrl, doc.name)}
-            className="px-3 py-1.5 text-xs font-mono rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors opacity-0 group-hover:opacity-100"
+            className="w-full h-full rounded-lg backdrop-blur-sm bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all flex flex-col items-center justify-center gap-1 p-1.5"
           >
-            скачать
+            <svg className="w-5 h-5 text-primary group-hover:text-green-500 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span className="text-[10px] font-mono text-muted-foreground truncate w-full text-center leading-tight">
+              {doc.name}
+            </span>
           </button>
+          {canDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete?.(doc) }}
+              className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 w-4 h-4 bg-red-500 rounded-full text-white flex items-center justify-center transition-opacity hover:bg-red-600 shadow-sm"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
       ))}
     </div>

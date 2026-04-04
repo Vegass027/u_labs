@@ -29,26 +29,26 @@ async function getCurrentUser() {
 }
 
 async function getOrderDocuments(orderId: string): Promise<Document[]> {
-  const supabase = await createClient()
-  
   try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
+
+    const { data: { session } } = await supabase.auth.getSession()
+
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}/documents`,
       {
         headers: {
-          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`,
         },
         cache: 'no-store',
       }
     )
-    
-    if (!response.ok) {
-      return []
-    }
-    
-    const data = await response.json()
-    return data || []
-  } catch (error) {
+
+    if (!response.ok) return []
+    return await response.json() || []
+  } catch {
     return []
   }
 }
@@ -61,13 +61,13 @@ export default async function ManagerOrderDetailPage({
   noStore()
   const supabase = await createClient()
   const currentUser = await getCurrentUser()
-  
+
   const { data: order, error } = await supabase
     .from('orders')
     .select('*')
     .eq('id', params.id)
     .single()
-  
+
   const documents = await getOrderDocuments(params.id)
 
   if (error || !order) {
