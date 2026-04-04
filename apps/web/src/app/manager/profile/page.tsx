@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import ProfileContent from './components/ProfileContent'
 
 export default async function ManagerProfilePage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {

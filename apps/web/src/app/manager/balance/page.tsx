@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 
 async function getCurrentUser() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) return null
@@ -19,7 +19,7 @@ async function getCurrentUser() {
 }
 
 async function getManagerBalance(userId: string) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const { data: profile, error } = await supabase
     .from('manager_profiles')
@@ -35,7 +35,7 @@ async function getManagerBalance(userId: string) {
 }
 
 async function getManagerCommissions(managerUserId: string) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const { data: profile } = await supabase
     .from('manager_profiles')
@@ -64,7 +64,7 @@ async function getManagerCommissions(managerUserId: string) {
 }
 
 async function getManagerStats(managerUserId: string) {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Get orders count and unique clients
   const { data: orders } = await supabase

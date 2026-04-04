@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server'
 
 async function getCurrentUser() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) return null
@@ -23,7 +23,7 @@ async function getCurrentUser() {
 }
 
 async function getCommissions(filters?: { status?: string }) {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   let query = supabase
     .from('commission_transactions')

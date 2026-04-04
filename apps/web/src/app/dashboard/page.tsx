@@ -7,7 +7,7 @@ interface DashboardPageProps {
 }
 
 async function getOrders(status?: OrderStatus | null): Promise<Order[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   let query = supabase
     .from('orders')

@@ -56,10 +56,14 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
+      console.log('[LOGIN] Attempting to sign in with email:', email)
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
+
+      console.log('[LOGIN] Sign in response:', { data, error })
 
       if (error) {
         const errorMessage = error.message === 'Email not confirmed'
@@ -72,24 +76,47 @@ export default function LoginPage() {
         return
       }
 
-      const { data: userData } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', data.user.id)
-        .single()
+      // Используем data.user напрямую из ответа signInWithPassword
+      // Это гарантирует, что мы получаем актуальные данные пользователя сразу после входа
+      const user = data.user
 
-      const role = userData?.role
+      console.log('[LOGIN] User data:', user)
+
+      if (!user) {
+        setError('Ошибка при получении пользователя')
+        setLoading(false)
+        return
+      }
+
+      // Роль хранится в app_metadata (raw_app_meta_data), а не в user_metadata
+      const role = user.app_metadata?.role || user.user_metadata?.role
+
+      console.log('[LOGIN] User role:', role)
+
+      if (!role) {
+        setError('Не удалось определить роль пользователя. Обратитесь в поддержку.')
+        setLoading(false)
+        return
+      }
+
+      // Проверяем cookies после входа
+      console.log('[LOGIN] All cookies:', document.cookie)
 
       if (role === 'owner') {
-        window.location.href = '/dashboard'
+        console.log('[LOGIN] Redirecting to /dashboard')
+        router.replace('/dashboard')
       } else if (role === 'manager') {
-        window.location.href = '/manager'
+        console.log('[LOGIN] Redirecting to /manager')
+        router.replace('/manager')
       } else if (role === 'client') {
-        window.location.href = '/client'
+        console.log('[LOGIN] Redirecting to /client')
+        router.replace('/client')
       } else {
-        window.location.href = '/'
+        console.log('[LOGIN] Redirecting to /')
+        router.replace('/')
       }
     } catch (err) {
+      console.error('[LOGIN] Error:', err)
       setError('An unexpected error occurred')
       setLoading(false)
     }

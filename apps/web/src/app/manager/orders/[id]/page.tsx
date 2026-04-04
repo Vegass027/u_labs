@@ -11,7 +11,7 @@ import { unstable_noStore as noStore } from 'next/cache'
 import type { Document } from '@/app/manager/components/DocumentList'
 
 async function getCurrentUser() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) return null
@@ -29,7 +29,7 @@ async function getCurrentUser() {
 }
 
 async function getOrderDocuments(orderId: string): Promise<Document[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   try {
     const response = await fetch(
@@ -59,7 +59,7 @@ export default async function ManagerOrderDetailPage({
   params: { id: string }
 }) {
   noStore()
-  const supabase = createClient()
+  const supabase = await createClient()
   const currentUser = await getCurrentUser()
   
   const { data: order, error } = await supabase

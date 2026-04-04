@@ -23,6 +23,16 @@
 - Триггеры в БД обрабатывают: автосоздание manager_profile, комиссии, обновление балансов. Не дублировать эту логику в коде.
 - JSONB поле `structured_brief` — не создавать отдельные таблицы для полей брифа. Бриф — единый документ.
 
+
+- **Два источника данных, чёткое разделение:**
+  - **`auth.users`** — только для аутентификации:
+    - `supabase.auth.getUser()` → получить `user.id` и `user.app_metadata.role`
+    - Никогда не читать `full_name`, `phone` отсюда
+  - **`public.users`** — только для профиля:
+    - `supabase.from('users').select('full_name, phone, avatar_url, telegram_chat_id').eq('id', user.id)`
+    - Никогда не читать роль отсюда — только из `auth.users`
+  - **Конфликта нет:** роль дублируется в обоих местах (триггер), но всегда читай роль из `app_metadata`, а профиль из `public.users`
+
 ### API
 
 - REST. Префиксы: `/api/auth/*`, `/api/orders/*`, `/api/manager/*`, `/api/admin/*`, `/api/ai/*`, `/api/notifications/*`.

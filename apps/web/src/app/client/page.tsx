@@ -3,7 +3,7 @@ import { StatusBadge } from './components/StatusBadge'
 import type { Order } from '@agency/types'
 
 async function getClientOrders(): Promise<Order[]> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {

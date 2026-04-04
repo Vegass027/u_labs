@@ -8,7 +8,7 @@ import ChatWindow from '@/components/chat/ChatWindow'
 import type { Order } from '@agency/types'
 
 async function getOrder(orderId: string): Promise<Order | null> {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('orders')
@@ -36,7 +36,7 @@ async function getOrder(orderId: string): Promise<Order | null> {
 }
 
 async function getCurrentUser() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) return null

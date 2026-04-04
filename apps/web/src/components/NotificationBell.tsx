@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { api } from '@/lib/api';
 
 interface Notification {
   id: string;
@@ -54,12 +55,10 @@ export default function NotificationBell({ currentUserId }: { currentUserId: str
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch('/api/notifications');
-      if (response.ok) {
-        const data = await response.json();
+      const { data, error } = await api.get<Notification[]>('/api/notifications')
+      if (data) {
         setNotifications(data.slice(0, 10));
-        const unread = data.filter((n: Notification) => !n.is_read).length;
-        setUnreadCount(unread);
+        setUnreadCount(data.filter((n: Notification) => !n.is_read).length);
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -91,9 +90,7 @@ export default function NotificationBell({ currentUserId }: { currentUserId: str
 
     if (!notification.is_read) {
       try {
-        await fetch(`/api/notifications/${notification.id}/read`, {
-          method: 'PATCH',
-        });
+        await api.patch(`/api/notifications/${notification.id}/read`, {})
         setNotifications((prev) =>
           prev.map((n) => (n.id === notification.id ? { ...n, is_read: true } : n))
         );

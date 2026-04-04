@@ -47,7 +47,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     }
   })
 
-  fastify.get('/me', async (req: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/me', { preHandler: [requireAuth] }, async (req: FastifyRequest, reply: FastifyReply) => {
     try {
       const user = (req as any).user
       if (!user) {

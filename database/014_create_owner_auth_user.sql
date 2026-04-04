@@ -1,0 +1,81 @@
+-- Создаем запись в auth.users для owner@agency.dev
+-- Это нужно потому что пользователь существует в public.users, но нет в auth.users
+
+-- Вставляем запись в auth.users с bcrypt hash для пароля '12345678'
+INSERT INTO auth.users (
+  instance_id,
+  id,
+  aud,
+  role,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  invited_at,
+  confirmation_token,
+  confirmation_sent_at,
+  recovery_token,
+  recovery_sent_at,
+  email_change_token_new,
+  email_change,
+  email_change_sent_at,
+  last_sign_in_at,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  is_super_admin,
+  created_at,
+  updated_at,
+  phone,
+  phone_confirmed_at,
+  phone_change,
+  phone_change_token,
+  phone_change_sent_at,
+  email_change_token_current,
+  email_change_confirm_status,
+  banned_until,
+  reauthentication_token,
+  reauthentication_sent_at,
+  is_sso_user,
+  deleted_at,
+  is_anonymous
+)
+VALUES (
+  '00000000-0000-0000-0000-000000000000',
+  'c67678a2-c5f9-427e-a2ea-6b233a37ee4c',
+  'authenticated',
+  'authenticated',
+  'owner@agency.dev',
+  '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+  NOW(),
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NOW(),
+  '{"provider": "email", "providers": ["email"]}',
+  '{}',
+  false,
+  NOW(),
+  NOW(),
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  0,
+  NULL,
+  NULL,
+  NULL,
+  false,
+  NULL,
+  false
+);
+
+-- Проверка
+SELECT id, email, email_confirmed_at, created_at 
+FROM auth.users 
+WHERE email = 'owner@agency.dev';

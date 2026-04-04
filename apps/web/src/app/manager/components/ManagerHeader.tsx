@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Bell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { signOut } from '@/app/actions/auth'
+import { api } from '@/lib/api'
 
 interface Notification {
   id: string
@@ -52,15 +53,13 @@ export default function ManagerHeader({ currentUserId, userName, userEmail, avat
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch('/api/notifications')
-      if (response.ok) {
-        const data = await response.json()
+      const { data } = await api.get<Notification[]>('/api/notifications')
+      if (data) {
         setNotifications(data.slice(0, 10))
-        const unread = data.filter((n: Notification) => !n.is_read).length
-        setUnreadCount(unread)
+        setUnreadCount(data.filter((n: Notification) => !n.is_read).length)
       }
     } catch (error) {
-      console.error('Failed to fetch notifications:', error)
+      console.error('[MANAGER HEADER] Failed to fetch notifications:', error)
     }
   }
 
@@ -89,9 +88,7 @@ export default function ManagerHeader({ currentUserId, userName, userEmail, avat
 
     if (!notification.is_read) {
       try {
-        await fetch(`/api/notifications/${notification.id}/read`, {
-          method: 'PATCH',
-        })
+        await api.patch(`/api/notifications/${notification.id}/read`, {})
         setNotifications((prev) =>
           prev.map((n) => (n.id === notification.id ? { ...n, is_read: true } : n))
         )

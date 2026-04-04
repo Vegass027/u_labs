@@ -9,10 +9,15 @@ import type { Order } from '@agency/types'
 // ============================================================================
 
 async function getManagerOrders(): Promise<Order[]> {
-  const supabase = createClient()
+  console.log('[MANAGER PAGE] Fetching manager orders')
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await createClient()
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  console.log('[MANAGER PAGE] User:', user?.id, 'Error:', userError)
+
   if (!user) {
+    console.log('[MANAGER PAGE] No user found')
     return []
   }
 
@@ -28,7 +33,10 @@ async function getManagerOrders(): Promise<Order[]> {
     .eq('manager_user_id', user.id)
     .order('created_at', { ascending: false })
 
+  console.log('[MANAGER PAGE] Orders:', data, 'Error:', error)
+
   if (error) {
+    console.error('[MANAGER PAGE] Error fetching orders:', error)
     return []
   }
 

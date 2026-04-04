@@ -10,18 +10,25 @@ export default async function ManagerLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  console.log('[MANAGER LAYOUT] Starting layout render')
+
+  const supabase = await createClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  console.log('[MANAGER LAYOUT] User:', user?.id, 'Error:', userError)
 
   if (!user) {
+    console.log('[MANAGER LAYOUT] No user found')
     return null
   }
 
-  const { data: userData } = await supabase
+  const { data: userData, error: userDataError } = await supabase
     .from('users')
     .select('id, full_name, email, role, avatar_url')
     .eq('id', user.id)
     .single()
+
+  console.log('[MANAGER LAYOUT] User data:', userData, 'Error:', userDataError)
 
   return (
     <div className="min-h-screen bg-background relative">
