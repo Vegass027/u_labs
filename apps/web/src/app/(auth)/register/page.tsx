@@ -86,7 +86,7 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
-      const { data, error } = await api.post('/api/auth/register', {
+      const { data, error } = await api.post<{ requiresEmailConfirmation: boolean; message?: string }>('/api/auth/register', {
         email: formData.email,
         password: formData.password,
         role: formData.role,
@@ -100,6 +100,13 @@ export default function RegisterPage() {
         return
       }
 
+      // Если требуется подтверждение email
+      if (data?.requiresEmailConfirmation) {
+        router.push('/login?emailConfirmation=true&email=' + encodeURIComponent(formData.email))
+        return
+      }
+
+      // Если подтверждение не требуется — редирект на login
       router.push('/login?registered=true&email=' + encodeURIComponent(formData.email))
     } catch (err) {
       setError('An unexpected error occurred')

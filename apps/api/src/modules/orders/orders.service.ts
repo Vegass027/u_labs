@@ -137,12 +137,11 @@ async function inviteClient(email: string, fullName: string, orderId: string) {
     redirectTo: `${config.WEB_URL}/auth/callback`,
   })
 
-  // Логируем и data и error
   logger.info({ email, orderId, data, error }, 'Invite result')
 
   if (error) {
     logger.error({ email, error }, 'Failed to invite client')
-    throw error // не глотаем ошибку
+    throw error
   }
 }
 

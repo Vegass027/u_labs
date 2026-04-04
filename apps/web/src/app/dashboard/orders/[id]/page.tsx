@@ -25,7 +25,9 @@ async function getOrder(orderId: string): Promise<Order | null> {
       ),
       manager:users!orders_manager_user_id_fkey (
         full_name,
-        email
+        email,
+        phone,
+        avatar_url
       )
     `)
     .eq('id', orderId)
@@ -154,15 +156,15 @@ export default async function OrderDetailPage({ params }: { params: { id: string
           <div className="p-4 space-y-3 text-sm font-mono">
             <div className="flex items-center gap-2">
               <span className="text-primary w-24">name:</span>
-              <span className="text-foreground">{'{' + (order.client?.full_name || 'Unknown') + '}'}</span>
+              <span className="text-foreground">{'〖' + (order.client?.full_name || 'Unknown') + '〗'}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-primary w-24">email:</span>
-              <span className="text-foreground">{'{' + (order.client?.email || 'Unknown') + '}'}</span>
+              <span className="text-foreground">{'〖' + (order.client?.email || 'Unknown') + '〗'}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-primary w-24">phone:</span>
-              <span className="text-foreground">{'{' + (order.client?.phone || '—') + '}'}</span>
+              <span className="text-foreground">{'〖' + (order.client?.phone || '—') + '〗'}</span>
             </div>
           </div>
         </div>
@@ -174,14 +176,35 @@ export default async function OrderDetailPage({ params }: { params: { id: string
               <span className="text-[#dcb67a]">{'>>>'}</span> Менеджер
             </h2>
           </div>
-          <div className="p-4 space-y-3 text-sm font-mono">
-            <div className="flex items-center gap-2">
-              <span className="text-primary w-24">name:</span>
-              <span className="text-foreground">{'{' + (order.manager?.full_name || 'Unassigned') + '}'}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-primary w-24">email:</span>
-              <span className="text-foreground">{'{' + (order.manager?.email || '—') + '}'}</span>
+          <div className="p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="mt-3">
+                {order.manager?.avatar_url ? (
+                  <img
+                    src={order.manager.avatar_url}
+                    alt={order.manager.full_name || 'Manager'}
+                    className="w-12 h-12 rounded-full object-cover border border-border flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-mono text-sm flex-shrink-0">
+                    {(order.manager?.full_name || 'M')[0].toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 space-y-2 text-sm font-mono">
+                <div className="flex items-center gap-2">
+                  <span className="text-primary w-24">name:</span>
+                  <span className="text-foreground">{'〖' + (order.manager?.full_name || 'Unassigned') + '〗'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-primary w-24">email:</span>
+                  <span className="text-foreground">{'〖' + (order.manager?.email || '—') + '〗'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-primary w-24">phone:</span>
+                  <span className="text-foreground">{'〖' + (order.manager?.phone || '—') + '〗'}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

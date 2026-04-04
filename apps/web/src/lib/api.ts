@@ -8,6 +8,12 @@ interface ApiResponse<T = any> {
   code?: string
 }
 
+interface RegisterResponse {
+  requiresEmailConfirmation?: boolean
+  message?: string
+  user?: any
+}
+
 async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}

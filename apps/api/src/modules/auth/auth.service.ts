@@ -4,7 +4,7 @@ import { AppError, ConflictError, NotFoundError } from '../../utils/errors'
 import type { User, UserRole } from '@agency/types'
 import type { RegisterInput } from './auth.schema'
 
-export async function registerUser(input: RegisterInput): Promise<User> {
+export async function registerUser(input: RegisterInput): Promise<{ requiresEmailConfirmation: boolean; user?: User }> {
   const { email, password, role, fullName, phone } = input
 
   logger.info({ email, role }, 'Registering new user')
@@ -13,7 +13,7 @@ export async function registerUser(input: RegisterInput): Promise<User> {
     email,
     password,
     options: {
-      data: { role, full_name: fullName }, // Сохраняем роль в user_metadata
+      data: { role, full_name: fullName },
     }
   })
 
@@ -26,40 +26,33 @@ export async function registerUser(input: RegisterInput): Promise<User> {
     throw new AppError('Failed to create user', 500)
   }
 
-  const userId = authData.user.id
-  
-  // Триггер handle_new_auth_user автоматически создаст запись в public.users
-  // Ждём немного чтобы триггер успел сработать
+  // session = null означает что требуется подтверждение email
+  if (!authData.session) {
+    logger.info({ email }, 'Email confirmation required, waiting for user to confirm')
+    return { requiresEmailConfirmation: true }
+  }
+
+  // Email confirmation выключен — читаем пользователя сразу
   await new Promise(resolve => setTimeout(resolve, 500))
-  
+
   const { data: userData, error: dbError } = await supabaseAdmin
     .from('users')
     .select('*')
-    .eq('id', userId)
+    .eq('id', authData.user.id)
     .single()
 
   if (dbError || !userData) {
     logger.error({ error: dbError }, 'Failed to fetch user from public.users after trigger')
-    // Если триггер не сработал — удаляем пользователя из auth.users
-    await supabaseAdmin.auth.admin.deleteUser(userId)
+    await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
     throw new AppError('Failed to create user profile', 500)
   }
 
-  // Если передан phone — обновляем
   if (phone) {
-    const { error: updateError } = await supabaseAdmin
-      .from('users')
-      .update({ phone })
-      .eq('id', userId)
-    
-    if (updateError) {
-      logger.error({ error: updateError }, 'Failed to update user phone')
-    }
+    await supabaseAdmin.from('users').update({ phone }).eq('id', authData.user.id)
   }
 
-  logger.info({ userId, email, role }, 'User registered successfully')
-
-  return userData
+  logger.info({ userId: authData.user.id, email, role }, 'User registered successfully')
+  return { requiresEmailConfirmation: false, user: userData }
 }
 
 export async function logoutUser(accessToken: string): Promise<void> {
@@ -104,4 +97,27 @@ export async function updateUserTelegram(userId: string, telegramChatId: string 
   logger.info({ userId, telegramChatId }, 'User telegram_chat_id updated')
 
   return data
+}
+
+export async function confirmInvite(userId: string, email: string, role: string, fullName: string): Promise<void> {
+  await supabaseAdmin.auth.admin.updateUserById(userId, {
+    app_metadata: { role }
+  })
+
+  const { error } = await supabaseAdmin.from('users').upsert({
+    id: userId,
+    email,
+    full_name: fullName,
+    role,
+    password_hash: '',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'id' })
+
+  if (error) {
+    logger.error({ error, userId }, 'Failed to upsert user in confirm-invite')
+    throw new AppError('Failed to confirm invite', 500)
+  }
+
+  logger.info({ userId, email, role }, 'Invite confirmed successfully')
 }

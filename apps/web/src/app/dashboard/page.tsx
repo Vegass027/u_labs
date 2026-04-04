@@ -182,12 +182,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
                   {/* Client - fixed width */}
                   <span className="text-muted-foreground w-44 shrink-0 truncate">
-                    {'{' + (order.client_name || order.client?.full_name || order.client?.email || 'Unknown') + '}'}
+                    {'〖' + (order.client_name || order.client?.full_name || order.client?.email || 'Unknown') + '〗'}
                   </span>
 
                   {/* Manager - fixed width */}
                   <span className="text-muted-foreground w-44 shrink-0 truncate">
-                    {'{' + (order.manager?.full_name || order.manager?.email || 'Unassigned') + '}'}
+                    {'〖' + (order.manager?.full_name || order.manager?.email || 'Unassigned') + '〗'}
                   </span>
 
                   {/* Price - fixed width */}

@@ -196,10 +196,10 @@ export default function ManagerHeader({ currentUserId, userName, userEmail, avat
           <img
             src={avatarUrl}
             alt="Avatar"
-            className="w-6 h-6 rounded-full object-cover border border-border"
+            className="w-10 h-10 rounded-full object-cover border border-border"
           />
         ) : (
-          <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] text-primary font-mono">
+          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-[14px] text-primary font-mono">
             {userInitial}
           </div>
         )}

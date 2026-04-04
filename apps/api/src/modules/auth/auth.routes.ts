@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
-import { registerUser, logoutUser, getCurrentUser, updateUserTelegram } from './auth.service'
+import { registerUser, logoutUser, getCurrentUser, updateUserTelegram, confirmInvite } from './auth.service'
 import { registerSchema } from './auth.schema'
 import { AppError } from '../../utils/errors'
 import { logger } from '../../utils/logger'
@@ -17,8 +17,16 @@ export async function authRoutes(fastify: FastifyInstance) {
   fastify.post('/register', async (req: FastifyRequest<{ Body: RegisterBody }>, reply: FastifyReply) => {
     try {
       const validatedInput = registerSchema.parse(req.body)
-      const user = await registerUser(validatedInput)
-      return reply.status(201).send(user)
+      const result = await registerUser(validatedInput)
+      
+      if (result.requiresEmailConfirmation) {
+        return reply.status(200).send({ 
+          requiresEmailConfirmation: true,
+          message: 'Check your email to confirm registration'
+        })
+      }
+      
+      return reply.status(201).send(result.user)
     } catch (error) {
       if (error instanceof AppError) {
         return reply.status(error.statusCode).send({ error: error.message, code: error.code })
@@ -80,6 +88,23 @@ export async function authRoutes(fastify: FastifyInstance) {
         return reply.status(error.statusCode).send({ error: error.message, code: error.code })
       }
       logger.error({ error }, 'Unexpected error in PATCH /me')
+      return reply.status(500).send({ error: 'Internal server error' })
+    }
+  })
+
+  fastify.post('/confirm-invite', { preHandler: [requireAuth] }, async (req: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const user = (req as any).user
+      if (!user) return reply.status(401).send({ error: 'Unauthorized' })
+
+      const { role, fullName } = req.body as { role: string, fullName: string }
+      await confirmInvite(user.id, user.email, role, fullName)
+      return reply.send({ success: true })
+    } catch (error) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message, code: error.code })
+      }
+      logger.error({ error }, 'Unexpected error in POST /confirm-invite')
       return reply.status(500).send({ error: 'Internal server error' })
     }
   })

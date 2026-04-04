@@ -32,11 +32,9 @@ export default function AuthCallbackPage() {
       console.log('[callback] session:', session?.user?.email)
       console.log('[callback] error:', error)
 
-      // Проверяем что сессия реально записалась
       const { data: { session: check } } = await supabase.auth.getSession()
       console.log('[callback] getSession after setSession:', check?.user?.email)
 
-      // Смотрим cookies
       console.log('[callback] cookies:', document.cookie)
 
       if (error || !session?.user) {
@@ -44,14 +42,34 @@ export default function AuthCallbackPage() {
         return
       }
 
-      const role = session.user.user_metadata?.role
+      if (!session.user.app_metadata?.role && session.user.user_metadata?.role) {
+        const role = session.user.user_metadata.role
+        const fullName = session.user.user_metadata.full_name || session.user.email?.split('@')[0] || ''
+
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/confirm-invite`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ role, fullName })
+        })
+
+        const { data: { session: refreshed } } = await supabase.auth.refreshSession()
+        
+        const finalRole = refreshed?.user.app_metadata?.role || role
+        const map: Record<string, string> = { owner: '/dashboard', manager: '/manager', client: '/client' }
+        window.location.href = map[finalRole] ?? '/client'
+        return
+      }
+
+      const role = session.user.app_metadata?.role || session.user.user_metadata?.role
       const map: Record<string, string> = {
         owner:   '/dashboard',
         manager: '/manager',
         client:  '/client',
       }
 
-      // Полная перезагрузка — middleware получит cookies
       window.location.href = map[role] ?? '/client'
     }
 

@@ -25,10 +25,18 @@ export default function LoginPage() {
 
   useEffect(() => {
     const registered = searchParams.get('registered')
+    const emailConfirmation = searchParams.get('emailConfirmation')
+    const confirmed = searchParams.get('confirmed')
     const emailParam = searchParams.get('email')
 
-    if (registered === 'true' && emailParam) {
+    if (emailConfirmation === 'true' && emailParam) {
       setSuccessMessage('Регистрация успешна! Проверьте почту и подтвердите email перед входом.')
+      setEmail(decodeURIComponent(emailParam))
+    } else if (confirmed === 'true' && emailParam) {
+      setSuccessMessage('Email подтверждён! Теперь вы можете войти.')
+      setEmail(decodeURIComponent(emailParam))
+    } else if (registered === 'true' && emailParam) {
+      setSuccessMessage('Регистрация успешна! Теперь вы можете войти.')
       setEmail(decodeURIComponent(emailParam))
     }
   }, [searchParams])
@@ -148,7 +156,7 @@ export default function LoginPage() {
     >
       {searchParams.get('error') === 'email_confirmation_failed' && (
         <div className="text-sm font-mono text-yellow-400">
-          <span className="font-bold">[warning]</span> Email confirmation failed. Please try to confirm your email again or contact support.
+          <span className="font-bold">[warning]</span> Ошибка подтверждения email. Попробуйте подтвердить email снова.
         </div>
       )}
 

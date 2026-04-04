@@ -108,16 +108,6 @@ export function OwnerTabManager() {
   }
 
   return (
-    <>
-      <TabBar tabs={tabs} onCloseTab={handleCloseTab} />
-      {tabs.length === 0 && (
-        <div className="flex-1 flex items-center justify-center text-muted-foreground font-mono text-sm">
-          <div className="text-center">
-            <div className="text-4xl mb-4">📂</div>
-            <p>откройте файл из проводника</p>
-          </div>
-        </div>
-      )}
-    </>
+    <TabBar tabs={tabs} onCloseTab={handleCloseTab} />
   )
 }
