@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { WithdrawalForm } from './components/WithdrawalForm'
 
 async function getCurrentUser() {
   const supabase = await createClient()
@@ -53,7 +54,7 @@ async function getManagerCommissions(managerUserId: string) {
         title
       )
     `)
-    .eq('manager_id', profile.id)
+    .eq('manager_user_id', managerUserId)
     .order('created_at', { ascending: false })
   
   if (error) {
@@ -61,6 +62,25 @@ async function getManagerCommissions(managerUserId: string) {
   }
   
   return commissions || []
+}
+
+async function getWithdrawalRequests(managerUserId: string) {
+  const supabase = await createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/manager/withdrawals`,
+    {
+      headers: {
+        'Authorization': `Bearer ${session?.access_token || ''}`,
+      },
+      cache: 'no-store',
+    }
+  )
+  
+  if (!response.ok) return []
+  
+  return await response.json() || []
 }
 
 async function getManagerStats(managerUserId: string) {
@@ -101,6 +121,7 @@ export default async function ManagerBalancePage() {
   
   const balance = await getManagerBalance(currentUser.id)
   const commissions = await getManagerCommissions(currentUser.id)
+  const withdrawals = await getWithdrawalRequests(currentUser.id)
   const stats = await getManagerStats(currentUser.id)
   
   if (!balance) {
@@ -177,6 +198,73 @@ export default async function ManagerBalancePage() {
           <div className="text-[10px] text-muted-foreground mt-1">по завершённым заказам</div>
         </div>
       </div>
+
+      {/* Total earned */}
+      <div className="border border-border rounded-lg p-4 bg-card">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs text-muted-foreground uppercase tracking-wider">всего начислено</span>
+          <span className="text-xs text-green-500 font-mono">за всё время</span>
+        </div>
+        <div className="text-2xl font-bold text-green-500 font-mono">
+          {((balance.balance_payable || 0) + (balance.balance_paid || 0)).toLocaleString('ru-RU')} ₽
+        </div>
+      </div>
+
+      {/* Withdrawal form */}
+      <div className="border border-border rounded-lg overflow-hidden bg-card">
+        <div className="px-4 py-3 bg-muted/30 text-xs text-muted-foreground uppercase tracking-wider border-b border-border">
+          запрос на вывод средств
+        </div>
+        <div className="p-4">
+          <WithdrawalForm balancePayable={balance.balance_payable || 0} />
+        </div>
+      </div>
+
+      {/* Withdrawal requests */}
+      {withdrawals.length > 0 && (
+        <div className="border border-border rounded-lg overflow-hidden bg-card">
+          <div className="px-4 py-3 bg-muted/30 text-xs text-muted-foreground uppercase tracking-wider border-b border-border">
+            последние запросы на вывод
+          </div>
+          <div className="divide-y divide-border">
+            {withdrawals.slice(0, 5).map((withdrawal: any) => (
+              <div
+                key={withdrawal.id}
+                className="flex items-center justify-between px-4 py-3 text-xs sm:text-sm"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-muted-foreground shrink-0">
+                    {new Date(withdrawal.created_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })}
+                  </span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
+                    withdrawal.status === 'pending'
+                      ? 'bg-yellow-500/10 text-yellow-500'
+                      : withdrawal.status === 'approved'
+                      ? 'bg-green-500/10 text-green-500'
+                      : 'bg-red-500/10 text-red-500'
+                  }`}>
+                    {withdrawal.status === 'pending'
+                      ? 'в ожидании'
+                      : withdrawal.status === 'approved'
+                      ? 'одобрено'
+                      : 'отклонено'}
+                  </span>
+                  {withdrawal.note && (
+                    <span className="text-muted-foreground truncate">
+                      {withdrawal.note}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-primary font-mono font-medium">
+                    {withdrawal.amount.toLocaleString('ru-RU')} ₽
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Transaction log */}
       <div className="border border-border rounded-lg overflow-hidden bg-card">

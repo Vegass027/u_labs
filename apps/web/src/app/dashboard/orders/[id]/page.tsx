@@ -9,6 +9,7 @@ import Link from 'next/link'
 import type { Order } from '@agency/types'
 import type { Document } from '@/app/manager/components/DocumentList'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionPanel } from '@/components/ui/accordion'
+import { OrderTitleSaver } from '@/app/manager/orders/[id]/OrderTitleSaver'
 
 async function getOrder(orderId: string): Promise<Order | null> {
   const supabase = await createClient()
@@ -112,6 +113,9 @@ export default async function OrderDetailPage({ params }: { params: { id: string
   
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
+      {/* Save order title to localStorage for tabs */}
+      <OrderTitleSaver orderId={order.id} title={order.title} />
+
       {/* Back link with order header */}
       <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono mb-4">
         <Link

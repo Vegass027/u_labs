@@ -19,6 +19,10 @@ export function OwnerSidebar() {
           <SidebarFile filename="commissions.ts" href="/dashboard/commissions" />
         </SidebarFolder>
 
+        <SidebarFolder name="Выводы" defaultOpen={false}>
+          <SidebarFile filename="withdrawals.ts" href="/dashboard/withdrawals" />
+        </SidebarFolder>
+
         <SidebarFolder name="Настройки" defaultOpen={false}>
           <SidebarFile filename="telegram.ts" href="/settings/telegram" />
         </SidebarFolder>

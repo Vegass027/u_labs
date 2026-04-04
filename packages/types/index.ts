@@ -124,3 +124,20 @@ export interface Notification {
   is_read: boolean
   created_at: string
 }
+
+// ------------------------------------------------------------
+// Withdrawal Request
+// ------------------------------------------------------------
+
+export type WithdrawalStatus = 'pending' | 'approved' | 'rejected'
+
+export interface WithdrawalRequest {
+  id: string
+  manager_user_id: string
+  amount: number
+  status: WithdrawalStatus
+  note?: string | null
+  processed_at?: string | null
+  created_at: string
+  updated_at: string
+}

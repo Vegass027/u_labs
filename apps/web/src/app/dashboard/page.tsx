@@ -164,28 +164,35 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                   </span>
 
                   {/* Order title - fixed width */}
-                  <span className="text-primary font-medium w-64 shrink-0 truncate">
+                  <span className="text-primary font-medium w-56 shrink-0 truncate">
                     {order.title}
                   </span>
 
                   {/* Status - fixed width */}
-                  <span className={`${getOwnerStatusColor(order.status)} w-32 shrink-0`}>
-                    #{getOwnerStatusText(order.status)}
+                  <span className={`${getOwnerStatusColor(order.status)} w-36 shrink-0 flex items-center gap-2 whitespace-nowrap`}>
+                    <span className="relative flex h-2 w-2 shrink-0">
+                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${getOwnerStatusColor(order.status).replace('text-', 'bg-')}`}></span>
+                      <span className={`relative inline-flex rounded-full h-2 w-2 ${getOwnerStatusColor(order.status).replace('text-', 'bg-')}`}></span>
+                    </span>
+                    {getOwnerStatusText(order.status)}
                   </span>
 
+                  {/* Extra gap between status and client */}
+                  <span className="w-8 shrink-0"></span>
+
                   {/* Client - fixed width */}
-                  <span className="text-muted-foreground w-48 shrink-0 truncate">
-                    {'{' + (order.client?.full_name || order.client?.email || 'Unknown') + '}'}
+                  <span className="text-muted-foreground w-44 shrink-0 truncate">
+                    {'{' + (order.client_name || order.client?.full_name || order.client?.email || 'Unknown') + '}'}
                   </span>
 
                   {/* Manager - fixed width */}
-                  <span className="text-muted-foreground w-48 shrink-0 truncate">
+                  <span className="text-muted-foreground w-44 shrink-0 truncate">
                     {'{' + (order.manager?.full_name || order.manager?.email || 'Unassigned') + '}'}
                   </span>
 
                   {/* Price - fixed width */}
-                  <span className="text-primary/70 w-32 shrink-0">
-                    {order.price ? `// ${order.price.toLocaleString('ru-RU')} ₽` : '// —'}
+                  <span className="text-primary/70 w-36 shrink-0">
+                    {order.price ? `// ${order.price.toLocaleString('ru-RU')} ₽ //` : '// — //'}
                   </span>
 
                   {/* Date - fixed width */}
