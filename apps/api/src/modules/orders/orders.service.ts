@@ -2,8 +2,8 @@ import { supabase, supabaseAdmin } from '../../db/client'
 import { logger } from '../../utils/logger'
 import { AppError, NotFoundError, ForbiddenError } from '../../utils/errors'
 import { config } from '../../config'
-import type { Order, OrderStatus, ManagerStatus } from '@agency/types'
-import type { CreateOrderInput, CreateManagerOrderInput, ListOrdersInput, UpdateManagerStatusInput } from './orders.schema'
+import type { Order, OrderStatus } from '@agency/types'
+import type { CreateOrderInput, CreateManagerOrderInput, ListOrdersInput } from './orders.schema'
 import { notifyNewOrder, notifyStatusChange } from '../notifications/telegram.service'
 import { createNotification } from '../notifications/notifications.service'
 
@@ -331,38 +331,3 @@ export async function updateOrderRawText(orderId: string, rawText: string, userI
   return data
 }
 
-export async function updateManagerStatus(orderId: string, managerStatus: ManagerStatus, managerUserId: string): Promise<Order> {
-  logger.info({ orderId, managerStatus, managerUserId }, 'Updating manager status')
-
-  const { data: order, error } = await supabase
-    .from('orders')
-    .select('manager_user_id')
-    .eq('id', orderId)
-    .single()
-
-  if (error || !order) {
-    logger.error({ error, orderId }, 'Failed to fetch order')
-    throw new NotFoundError('Order not found')
-  }
-
-  if (order.manager_user_id !== managerUserId) {
-    logger.warn({ orderId, managerUserId, orderManagerId: order.manager_user_id }, 'Manager tried to update status of order they do not own')
-    throw new ForbiddenError('You can only update status of your own orders')
-  }
-
-  const { data: updatedOrder, error: updateError } = await supabase
-    .from('orders')
-    .update({ manager_status: managerStatus })
-    .eq('id', orderId)
-    .select()
-    .single()
-
-  if (updateError || !updatedOrder) {
-    logger.error({ error: updateError, orderId }, 'Failed to update manager status')
-    throw new AppError(updateError?.message || 'Failed to update manager status', 500)
-  }
-
-  logger.info({ orderId, managerStatus }, 'Manager status updated successfully')
-
-  return updatedOrder
-}

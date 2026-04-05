@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FolderIcon } from '@/components/FileIcon'
+import { FolderIcon } from './FileIcon'
 import { cn } from '@/lib/utils'
 
 interface SidebarFolderProps {

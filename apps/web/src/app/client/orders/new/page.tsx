@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { api } from '@/lib/api'
 
 export default function NewClientOrderPage() {
@@ -22,90 +23,107 @@ export default function NewClientOrderPage() {
     setError('')
 
     if (!formData.title.trim()) {
-      setError('Title is required')
+      setError('Название обязательно')
       return
     }
 
     setLoading(true)
 
     try {
-      const { data, error } = await api.post('/api/orders', {
+      const { data, error: apiError } = await api.post('/api/orders', {
         title: formData.title,
         raw_text: formData.raw_text || undefined,
       })
 
-      if (error) {
-        setError(error)
+      if (apiError) {
+        setError(apiError)
         return
       }
 
       router.push('/client')
     } catch (err) {
-      setError('An unexpected error occurred')
+      setError('Произошла ошибка')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="p-6">
-      <div className="max-w-2xl mx-auto">
-        <div className="mb-6">
-          <a href="/client" className="text-blue-600 hover:underline">
-            &larr; Back to My Orders
-          </a>
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* // ============================================================
+          // HEADER SECTION
+          // ============================================================ */}
+      <div className="mb-6">
+        <Link
+          href="/client"
+          className="inline-flex items-center gap-2 text-sm font-mono text-muted-foreground hover:text-primary transition-colors"
+        >
+          <span className="text-[#dcb67a]">&lt;</span>
+          <span>// вернуться к заявкам</span>
+        </Link>
+      </div>
+
+      {/* // ============================================================
+          // FORM SECTION
+          // ============================================================ */}
+      <div className="bg-card/50 border border-border rounded-lg p-6 space-y-6">
+        {/* Header */}
+        <div className="text-lg text-foreground font-mono">
+          <span className="font-bold">// Создать заявку // -&gt;</span> <span className="text-[#dcb67a]">Новый проект:</span>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h1 className="text-2xl font-bold mb-6">Create New Order</h1>
+        {/* Error message */}
+        {error && (
+          <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded font-mono text-sm">
+            <span className="text-red-400">// error: </span>
+            {error}
+          </div>
+        )}
 
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded">
-              {error}
-            </div>
-          )}
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Title field */}
+          <div className="space-y-2">
+            <label htmlFor="title" className="text-sm font-mono text-muted-foreground">
+              // название заявки
+            </label>
+            <input
+              id="title"
+              name="title"
+              type="text"
+              value={formData.title}
+              onChange={handleChange}
+              required
+              placeholder="Введите название проекта"
+              className="w-full px-3 py-2 bg-transparent border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary font-mono text-sm placeholder:text-muted-foreground/50"
+            />
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                Title
-              </label>
-              <input
-                id="title"
-                name="title"
-                type="text"
-                value={formData.title}
-                onChange={handleChange}
-                required
-                placeholder="Enter order title"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+          {/* Description field */}
+          <div className="space-y-2">
+            <label htmlFor="raw_text" className="text-sm font-mono text-muted-foreground">
+              // описание (опционально)
+            </label>
+            <textarea
+              id="raw_text"
+              name="raw_text"
+              value={formData.raw_text}
+              onChange={handleChange}
+              rows={6}
+              placeholder="Опишите ваш проект..."
+              className="w-full px-3 py-2 bg-transparent border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary font-mono text-sm placeholder:text-muted-foreground/50 resize-none"
+            />
+          </div>
 
-            <div>
-              <label htmlFor="raw_text" className="block text-sm font-medium text-gray-700 mb-1">
-                Description (optional)
-              </label>
-              <textarea
-                id="raw_text"
-                name="raw_text"
-                value={formData.raw_text}
-                onChange={handleChange}
-                rows={6}
-                placeholder="Enter order description"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Creating...' : 'Create Order'}
-            </button>
-          </form>
-        </div>
+          {/* Submit button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2.5 px-4 bg-primary text-background rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed font-mono text-sm transition-colors"
+          >
+            {loading ? '// создание...' : '// создать заявку'}
+          </button>
+        </form>
       </div>
     </div>
   )

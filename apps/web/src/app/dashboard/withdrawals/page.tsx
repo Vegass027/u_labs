@@ -150,19 +150,19 @@ export default async function WithdrawalsPage({ searchParams }: WithdrawalsPageP
                     <div className="space-y-1 text-sm">
                       <div className="flex items-center gap-2 text-muted-foreground font-mono">
                         <span className="text-primary">manager:</span>
-                        <span>{withdrawal.manager?.full_name || 'Unknown'}</span>
-                        <span className="text-muted-foreground">{'<' + withdrawal.manager?.email + '>'}</span>
+                        <span className="text-[#dcb67a]">{withdrawal.manager?.full_name || 'Unknown'}</span>
+                        <span className="text-muted-foreground">{'〖' + withdrawal.manager?.email + '〗'}</span>
                       </div>
                       
                       {(withdrawal.manager_profile?.sbp_phone || withdrawal.manager_profile?.card_number) && (
                         <div className="flex items-start gap-2 text-muted-foreground font-mono">
-                          <span className="text-primary shrink-0">реквизиты:</span>
+                          <span className="text-primary shrink-0">payment details:</span>
                           <span className="text-foreground">
                             {withdrawal.manager_profile?.sbp_phone && (
-                              <>СБП: {withdrawal.manager_profile.sbp_phone}</>
+                              <>SBP: {withdrawal.manager_profile.sbp_phone}</>
                             )}
                             {withdrawal.manager_profile?.card_number && (
-                              <>Карта: {withdrawal.manager_profile.card_number}</>
+                              <>Card: {withdrawal.manager_profile.card_number}</>
                             )}
                           </span>
                         </div>
@@ -170,7 +170,7 @@ export default async function WithdrawalsPage({ searchParams }: WithdrawalsPageP
                       
                       {withdrawal.manager_profile?.sbp_comment && (
                         <div className="flex items-start gap-2 text-muted-foreground font-mono">
-                          <span className="text-primary shrink-0">комментарий:</span>
+                          <span className="text-primary shrink-0">comment:</span>
                           <span className="text-foreground">{withdrawal.manager_profile.sbp_comment}</span>
                         </div>
                       )}

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { StatusBadge } from '@/components/StatusBadge'
 import type { Order } from '@agency/types'
 
 // ============================================================================
@@ -41,26 +42,6 @@ async function getManagerOrders(): Promise<Order[]> {
   }
 
   return data || []
-}
-
-function getManagerStatusColor(status: string | null | undefined): string {
-  const colors: Record<string, string> = {
-    'brief_ready': 'text-primary',
-    'negotiation': 'text-amber-400',
-    'contract': 'text-purple-400',
-    'cancelled': 'text-red-400',
-  }
-  return status ? colors[status] || 'text-gray-400' : 'text-gray-400'
-}
-
-function getManagerStatusText(status: string | null | undefined): string {
-  const texts: Record<string, string> = {
-    'brief_ready': 'Бриф готов',
-    'negotiation': 'Переговоры',
-    'contract': 'Договор',
-    'cancelled': 'Отклонён',
-  }
-  return status ? texts[status] || '—' : '—'
 }
 
 export default async function ManagerPage() {
@@ -117,14 +98,10 @@ export default async function ManagerPage() {
                     {order.title}
                   </span>
 
-                  {/* Manager status - fixed width */}
-                  <span className={`${getManagerStatusColor(order.manager_status)} w-36 shrink-0 flex items-center gap-2 whitespace-nowrap`}>
-                    <span className="relative flex h-2 w-2 shrink-0">
-                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${getManagerStatusColor(order.manager_status).replace('text-', 'bg-')}`}></span>
-                      <span className={`relative inline-flex rounded-full h-2 w-2 ${getManagerStatusColor(order.manager_status).replace('text-', 'bg-')}`}></span>
-                    </span>
-                    {getManagerStatusText(order.manager_status)}
-                  </span>
+                  {/* Order status - fixed width */}
+                  <div className="w-36 shrink-0">
+                    <StatusBadge status={order.status} />
+                  </div>
 
                   {/* Extra gap between status and client */}
                   <span className="w-8 shrink-0"></span>

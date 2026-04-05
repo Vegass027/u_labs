@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { FileIcon } from '@/components/FileIcon'
+import { FileIcon } from './FileIcon'
 import { cn } from '@/lib/utils'
 
 interface SidebarFileProps {

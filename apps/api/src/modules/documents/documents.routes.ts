@@ -16,7 +16,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/api/orders/:id/documents',
     {
-      preHandler: [requireAuth, requireRole('owner', 'manager')],
+      preHandler: [requireAuth, requireRole('owner', 'manager', 'client')],
     },
     async (req: any, reply: any) => {
       const { id: orderId } = req.params as { id: string }
@@ -25,7 +25,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
 
       const { data: order, error: orderError } = await supabase
         .from('orders')
-        .select('id, manager_user_id')
+        .select('id, client_user_id, manager_user_id')
         .eq('id', orderId)
         .single()
 
@@ -33,7 +33,10 @@ export async function documentsRoutes(fastify: FastifyInstance) {
         throw new AppError('Order not found', 404)
       }
 
-      if (order.manager_user_id !== userId && userRole !== 'owner') {
+      const isOwnerOrManager = order.manager_user_id === userId || userRole === 'owner'
+      const isClient = order.client_user_id === userId && userRole === 'client'
+
+      if (!isOwnerOrManager && !isClient) {
         throw new AppError('Access denied', 403)
       }
 

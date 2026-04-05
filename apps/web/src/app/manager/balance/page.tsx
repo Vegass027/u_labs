@@ -163,7 +163,7 @@ export default async function ManagerBalancePage() {
     )
   }
 
-  const totalBalance = (balance.balance_reserved || 0) + (balance.balance_payable || 0)
+  const totalBalance = balance.balance_payable || 0
   
    return (
      <div className="max-w-3xl mx-auto space-y-4">
@@ -202,12 +202,12 @@ export default async function ManagerBalancePage() {
       {/* Balance breakdown */}
       <div className="grid grid-cols-2 gap-3">
         <div className="border border-border rounded-lg p-3 bg-card">
-          <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">зарезервировано</div>
-          <div className="text-lg font-bold text-muted-foreground font-mono">
-            {balance.balance_reserved?.toLocaleString('ru-RU') || 0} ₽
-          </div>
-          <div className="text-[10px] text-muted-foreground mt-1">по активным заказам</div>
-        </div>
+           <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">зарезервировано</div>
+           <div className="text-lg font-bold text-yellow-500 font-mono">
+             {balance.balance_reserved?.toLocaleString('ru-RU') || 0} ₽
+           </div>
+           <div className="text-[10px] text-muted-foreground mt-1">по активным заказам</div>
+         </div>
         <div className="border border-primary/30 rounded-lg p-3 bg-card">
            <div className="text-xs text-primary uppercase tracking-wider mb-1">Заявки на вывод</div>
            <div className="text-lg font-bold text-primary font-mono">
@@ -224,7 +224,10 @@ export default async function ManagerBalancePage() {
           <span className="text-xs text-green-500 font-mono">за всё время</span>
         </div>
         <div className="text-2xl font-bold text-green-500 font-mono">
-          {commissions.reduce((sum, c) => sum + c.amount, 0).toLocaleString('ru-RU')} ₽
+           {commissions
+             .filter(c => c.tx_status === 'payable' || c.tx_status === 'paid')
+             .reduce((sum, c) => sum + c.amount, 0)
+             .toLocaleString('ru-RU')} ₽
          </div>
        </div>
 
@@ -248,56 +251,101 @@ export default async function ManagerBalancePage() {
         </div>
       </div>
 
-      {/* Withdrawal requests */}
-      <WithdrawalRequestsList withdrawals={withdrawals} />
+       {/* Withdrawal requests */}
+       <details className="border border-border rounded-lg overflow-hidden bg-card group">
+         <summary className="flex items-center justify-between px-4 py-3 bg-muted/30 text-xs text-muted-foreground uppercase tracking-wider border-b border-border cursor-pointer hover:bg-muted/50 transition-colors">
+           <span>последние запросы на вывод</span>
+           <span className="transform group-open:rotate-180 transition-transform">▼</span>
+         </summary>
+         <div className="divide-y divide-border">
+           {withdrawals.length === 0 ? (
+             <div className="px-4 py-4 text-center text-muted-foreground text-xs">
+               запросы на вывод не найдены
+             </div>
+           ) : (
+             withdrawals.slice(0, 5).map((withdrawal: any) => (
+               <div
+                 key={withdrawal.id}
+                 className="flex items-center justify-between px-4 py-3 text-xs sm:text-sm"
+               >
+                 <div className="flex items-center gap-2 min-w-0">
+                   <span className="text-muted-foreground shrink-0">
+                     {new Date(withdrawal.created_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })}
+                   </span>
+                   <span className="text-muted-foreground shrink-0">|</span>
+                   <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
+                     withdrawal.status === 'pending'
+                       ? 'bg-yellow-500/10 text-yellow-500'
+                       : withdrawal.status === 'approved'
+                       ? 'bg-green-500/10 text-green-500'
+                       : 'bg-red-500/10 text-red-500'
+                   }`}>
+                     {withdrawal.status === 'pending'
+                       ? 'в ожидании'
+                       : withdrawal.status === 'approved'
+                       ? 'одобрено'
+                       : 'отклонено'}
+                   </span>
+                 </div>
+                 <div className="flex items-center gap-2 shrink-0">
+                   <span className="text-primary font-mono font-medium">
+                     {withdrawal.amount.toLocaleString('ru-RU')} ₽
+                   </span>
+                 </div>
+               </div>
+             ))
+           )}
+         </div>
+       </details>
 
-      {/* Transaction log */}
-      <div className="border border-border rounded-lg overflow-hidden bg-card">
-        <div className="px-3 py-2 bg-muted/30 text-xs text-muted-foreground uppercase tracking-wider border-b border-border">
-          последние начисления
-        </div>
-        <div className="divide-y divide-border">
-          {commissions.length === 0 ? (
-            <div className="px-3 py-4 text-center text-muted-foreground text-xs">
-              комиссии не найдены
-            </div>
-          ) : (
-            commissions.slice(0, 10).map((commission) => (
-              <div
-                key={commission.id}
-                className="flex items-center justify-between px-3 py-2 text-xs sm:text-sm"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-muted-foreground shrink-0">
-                    {new Date(commission.created_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })}
-                  </span>
-                  <span className="text-foreground truncate">
-                    {(commission.order as any)?.title || 'Без названия'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                    commission.tx_status === 'reserved'
-                      ? 'bg-muted text-muted-foreground'
-                      : commission.tx_status === 'payable'
-                      ? 'bg-primary/10 text-primary'
-                      : 'bg-primary/20 text-primary'
-                  }`}>
-                    {commission.tx_status === 'reserved'
-                      ? 'зарезервирована'
-                      : commission.tx_status === 'payable'
-                      ? 'к выплате'
-                      : 'выведено'}
-                  </span>
-                  <span className="text-primary font-mono font-medium">
-                    +{commission.amount.toLocaleString('ru-RU')} ₽
-                  </span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+       {/* Transaction log */}
+       <details className="border border-border rounded-lg overflow-hidden bg-card group">
+         <summary className="flex items-center justify-between px-4 py-3 bg-muted/30 text-xs text-muted-foreground uppercase tracking-wider border-b border-border cursor-pointer hover:bg-muted/50 transition-colors">
+           <span>последние начисления</span>
+           <span className="transform group-open:rotate-180 transition-transform">▼</span>
+         </summary>
+         <div className="divide-y divide-border">
+           {commissions.length === 0 ? (
+             <div className="px-3 py-4 text-center text-muted-foreground text-xs">
+               комиссии не найдены
+             </div>
+           ) : (
+             commissions.slice(0, 10).map((commission) => (
+               <div
+                 key={commission.id}
+                 className="flex items-center justify-between px-3 py-2 text-xs sm:text-sm"
+               >
+                 <div className="flex items-center gap-2 min-w-0">
+                   <span className="text-muted-foreground shrink-0">
+                     {new Date(commission.created_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })}
+                   </span>
+                   <span className="text-foreground truncate">
+                     {(commission.order as any)?.title || 'Без названия'}
+                   </span>
+                 </div>
+                 <div className="flex items-center gap-2 shrink-0">
+                   <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                     commission.tx_status === 'reserved'
+                       ? 'bg-muted text-muted-foreground'
+                       : commission.tx_status === 'payable'
+                       ? 'bg-primary/10 text-primary'
+                       : 'bg-primary/20 text-primary'
+                   }`}>
+                     {commission.tx_status === 'reserved'
+                       ? 'зарезервирована'
+                       : commission.tx_status === 'payable'
+                       ? 'к выплате'
+                       : 'выведено'}
+                   </span>
+                   <span className="text-primary font-mono font-medium">
+                     +{commission.amount.toLocaleString('ru-RU')} ₽
+                   </span>
+                 </div>
+               </div>
+             ))
+           )}
+         </div>
+       </details>
     </div>
   )
 }

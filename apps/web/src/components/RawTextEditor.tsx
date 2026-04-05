@@ -7,9 +7,10 @@ import { api } from '@/lib/api'
 interface RawTextEditorProps {
   orderId: string
   initialText?: string | null
+  apiEndpoint?: string
 }
 
-export function RawTextEditor({ orderId, initialText }: RawTextEditorProps) {
+export function RawTextEditor({ orderId, initialText, apiEndpoint = '/api/manager/orders' }: RawTextEditorProps) {
   const router = useRouter()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [text, setText] = useState(initialText || '')
@@ -33,7 +34,7 @@ export function RawTextEditor({ orderId, initialText }: RawTextEditorProps) {
     setError('')
 
     try {
-      const { error: apiError } = await api.patch(`/api/manager/orders/${orderId}/raw_text`, {
+      const { error: apiError } = await api.patch(`${apiEndpoint}/${orderId}/raw_text`, {
         raw_text: text,
       })
 

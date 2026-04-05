@@ -7,7 +7,6 @@ import {
   listManagerOrders,
   listClientOrders,
   updateOrderStatus,
-  updateManagerStatus,
   setOrderPrice,
   updateOrderRawText,
 } from './orders.service'
@@ -15,7 +14,6 @@ import {
   createOrderSchema,
   createManagerOrderSchema,
   updateOrderStatusSchema,
-  updateManagerStatusSchema,
   setOrderPriceSchema,
   listOrdersSchema,
   updateRawTextSchema,
@@ -109,28 +107,6 @@ export async function ordersRoutes(fastify: FastifyInstance) {
   )
 
   fastify.patch(
-    '/api/manager/orders/:id/manager-status',
-    { preHandler: [requireAuth, requireRole('manager')] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      try {
-        if (!req.user) {
-          return reply.status(401).send({ error: 'Unauthorized' })
-        }
-        const { id } = req.params as { id: string }
-        const validatedInput = updateManagerStatusSchema.parse(req.body)
-        const order = await updateManagerStatus(id, validatedInput.manager_status, req.user.id)
-        return reply.send(order)
-      } catch (error) {
-        if (error instanceof AppError) {
-          return reply.status(error.statusCode).send({ error: error.message, code: error.code })
-        }
-        logger.error({ error }, 'Unexpected error in PATCH /api/manager/orders/:id/manager-status')
-        return reply.status(500).send({ error: 'Internal server error' })
-      }
-    }
-  )
-
-  fastify.patch(
     '/api/manager/orders/:id/raw_text',
     { preHandler: [requireAuth, requireRole('manager', 'owner')] },
     async (req: FastifyRequest, reply: FastifyReply) => {
@@ -147,6 +123,28 @@ export async function ordersRoutes(fastify: FastifyInstance) {
           return reply.status(error.statusCode).send({ error: error.message, code: error.code })
         }
         logger.error({ error }, 'Unexpected error in PATCH /api/manager/orders/:id/raw_text')
+        return reply.status(500).send({ error: 'Internal server error' })
+      }
+    }
+  )
+
+  fastify.patch(
+    '/api/orders/:id/raw_text',
+    { preHandler: [requireAuth, requireRole('client')] },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      try {
+        if (!req.user) {
+          return reply.status(401).send({ error: 'Unauthorized' })
+        }
+        const { id } = req.params as { id: string }
+        const validatedInput = updateRawTextSchema.parse(req.body)
+        const order = await updateOrderRawText(id, validatedInput.raw_text, req.user.id)
+        return reply.send(order)
+      } catch (error) {
+        if (error instanceof AppError) {
+          return reply.status(error.statusCode).send({ error: error.message, code: error.code })
+        }
+        logger.error({ error }, 'Unexpected error in PATCH /api/orders/:id/raw_text')
         return reply.status(500).send({ error: 'Internal server error' })
       }
     }

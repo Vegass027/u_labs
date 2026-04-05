@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { api } from '@/lib/api'
-import type { Document } from '@/app/manager/components/DocumentList'
+import type { Document } from '@/components/DocumentList'
 
 interface DocumentUploadSectionProps {
   orderId: string

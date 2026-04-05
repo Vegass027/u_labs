@@ -1,13 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { BriefSection } from './BriefSection'
 import BriefChat from './BriefChat'
-import { ManagerStatusDropdown } from './ManagerStatusDropdown'
-import { ProjectInfoPanel } from './ProjectInfoPanel'
+import { StatusBadge } from '@/components/StatusBadge'
+import { ProjectInfoPanel } from '@/components/ProjectInfoPanel'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionPanel } from '@/components/ui/accordion'
 import Link from 'next/link'
 import { OrderTitleSaver } from './OrderTitleSaver'
 import { unstable_noStore as noStore } from 'next/cache'
-import type { Document } from '@/app/manager/components/DocumentList'
+import type { Document } from '@/components/DocumentList'
 import ChatWindow from '@/components/chat/ChatWindow'
 
 async function getCurrentUser() {
@@ -64,7 +64,10 @@ export default async function ManagerOrderDetailPage({
 
   const { data: order, error } = await supabase
     .from('orders')
-    .select('*')
+    .select(`
+      *,
+      client:users!client_user_id(full_name, email)
+    `)
     .eq('id', params.id)
     .single()
 
@@ -111,14 +114,14 @@ export default async function ManagerOrderDetailPage({
           <div className="px-4 py-2 border-b border-border bg-muted/50">
               <div className="flex items-center justify-between">
                 <h1 className="text-lg font-bold text-foreground font-mono">{order.title}</h1>
-                <ManagerStatusDropdown orderId={order.id} currentStatus={order.manager_status} />
+                <StatusBadge status={order.status} />
               </div>
           </div>
-          {order.client_user_id && (
+          {order.client && (
             <div className="px-4 py-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground font-mono">
-                <span className="text-primary">client_id:</span>
-                <span>{order.client_user_id}</span>
+                <span className="text-primary">клиент:</span>
+                <span>{order.client.full_name || order.client.email || 'Неизвестно'}</span>
               </div>
             </div>
           )}

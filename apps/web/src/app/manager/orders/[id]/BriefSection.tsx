@@ -8,9 +8,10 @@ interface BriefSectionProps {
   orderId: string;
   brief: StructuredBrief | null;
   rawText: string | null;
+  apiEndpoint?: string;
 }
 
-export function BriefSection({ orderId, brief, rawText }: BriefSectionProps) {
+export function BriefSection({ orderId, brief, rawText, apiEndpoint = '/api/manager/orders' }: BriefSectionProps) {
   // Конвертируем AI-бриф в текст для редактирования
   const briefAsText = useMemo(() => {
     if (!brief) return null;
@@ -52,5 +53,5 @@ ${brief.questions?.map(q => `- ${q}`).join('\n') || '—'}
   }, [brief]);
 
   // Приоритет raw_text над briefAsText
-  return <RawTextEditor orderId={orderId} initialText={rawText || briefAsText} />;
+  return <RawTextEditor orderId={orderId} initialText={rawText || briefAsText} apiEndpoint={apiEndpoint} />;
 }

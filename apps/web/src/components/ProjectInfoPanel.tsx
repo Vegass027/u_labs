@@ -1,6 +1,6 @@
 'use client'
 
-import { DocumentList, Document } from '@/app/manager/components/DocumentList'
+import { DocumentList, Document } from './DocumentList'
 
 interface ProjectInfoPanelProps {
   price: number | null

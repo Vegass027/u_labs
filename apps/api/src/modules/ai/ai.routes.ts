@@ -24,7 +24,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
     {
       preHandler: [
         requireAuth,
-        requireRole('owner', 'manager'),
+        requireRole('owner', 'manager', 'client'),
       ],
     },
     async (req: any, reply: any) => {
@@ -87,7 +87,7 @@ ${brief.questions?.map(q => `- ${q}`).join('\n') || '—'}
     {
       preHandler: [
         requireAuth,
-        requireRole('owner', 'manager'),
+        requireRole('owner', 'manager', 'client'),
       ],
     },
     async (req: any, reply: any) => {
@@ -106,7 +106,7 @@ ${brief.questions?.map(q => `- ${q}`).join('\n') || '—'}
     {
       preHandler: [
         requireAuth,
-        requireRole('owner', 'manager'),
+        requireRole('owner', 'manager', 'client'),
       ],
     },
     async (req: any, reply: any) => {
@@ -262,7 +262,7 @@ ${brief.questions?.map(q => `- ${q}`).join('\n') || '—'}
     {
       preHandler: [
         requireAuth,
-        requireRole('owner', 'manager'),
+        requireRole('owner', 'manager', 'client'),
       ],
     },
     async (req: any, reply: any) => {

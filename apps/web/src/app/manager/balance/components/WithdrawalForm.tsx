@@ -135,7 +135,7 @@ export function WithdrawalForm({ balancePayable, sbpPhone, cardNumber, sbpCommen
           <label className="text-xs text-muted-foreground uppercase tracking-wider">
             сумма к выводу
           </label>
-          <span className="text-xs text-muted-foreground font-mono">
+          <span className="text-xs text-yellow-500 font-mono">
             доступно: {balancePayable.toLocaleString('ru-RU')} ₽
           </span>
         </div>

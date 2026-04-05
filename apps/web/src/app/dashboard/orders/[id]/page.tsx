@@ -7,7 +7,7 @@ import { DocumentsSection } from './DocumentsSection'
 import ChatWindow from '@/components/chat/ChatWindow'
 import Link from 'next/link'
 import type { Order } from '@agency/types'
-import type { Document } from '@/app/manager/components/DocumentList'
+import type { Document } from '@/components/DocumentList'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionPanel } from '@/components/ui/accordion'
 import { OrderTitleSaver } from '@/app/manager/orders/[id]/OrderTitleSaver'
 
@@ -299,7 +299,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
         <AccordionItem value="chat-client">
           <AccordionTrigger className="px-4 py-3 bg-muted/50 hover:bg-muted/70 transition-colors [&_[data-slot=accordion-indicator]]:hidden items-center">
             <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
-              <span className="text-green-500">{'>>>'}</span> Чат с клиентом <span className="text-green-500">{'<<<'}</span>
+              <span className="text-green-500">{'>>>'}</span> Чат Клиент ⭤ Менеджер <span className="text-green-500">{'<<<'}</span>
             </h2>
             <div className="w-8 h-8 rounded border border-green-500/50 flex items-center justify-center bg-green-500/10 group-hover:bg-green-500/20 transition-colors data-[state=open]:rotate-180">
               <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -97,7 +97,7 @@ export async function processTextToBrief(rawText: string): Promise<{ brief: Stru
 export async function getAiChatHistory(orderId: string, userId: string, userRole: string) {
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('manager_user_id')
+    .select('client_user_id, manager_user_id')
     .eq('id', orderId)
     .single()
 
@@ -105,7 +105,7 @@ export async function getAiChatHistory(orderId: string, userId: string, userRole
     throw new NotFoundError('Order not found')
   }
 
-  if (order.manager_user_id !== userId && userRole !== 'owner') {
+  if (order.client_user_id !== userId && order.manager_user_id !== userId && userRole !== 'owner') {
     throw new ForbiddenError('Access denied')
   }
 
@@ -131,7 +131,7 @@ export async function sendAiChatMessage(
 ): Promise<{ response: string; canGenerateBrief: boolean }> {
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('title, raw_text, manager_user_id')
+    .select('title, raw_text, client_user_id, manager_user_id')
     .eq('id', orderId)
     .single()
 
@@ -139,7 +139,7 @@ export async function sendAiChatMessage(
     throw new NotFoundError('Order not found')
   }
 
-  if (order.manager_user_id !== userId && userRole !== 'owner') {
+  if (order.client_user_id !== userId && order.manager_user_id !== userId && userRole !== 'owner') {
     throw new ForbiddenError('Access denied')
   }
 
@@ -206,7 +206,7 @@ export async function processDocumentToChat(
 ): Promise<{ response: string; canGenerateBrief: boolean }> {
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('title, raw_text, manager_user_id')
+    .select('title, raw_text, client_user_id, manager_user_id')
     .eq('id', orderId)
     .single()
 
@@ -214,7 +214,7 @@ export async function processDocumentToChat(
     throw new NotFoundError('Order not found')
   }
 
-  if (order.manager_user_id !== userId && userRole !== 'owner') {
+  if (order.client_user_id !== userId && order.manager_user_id !== userId && userRole !== 'owner') {
     throw new ForbiddenError('Access denied')
   }
 

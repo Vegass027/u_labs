@@ -1,7 +1,7 @@
 'use client'
 
 import { DocumentUploadSection } from '../../components/DocumentUploadSection'
-import type { Document } from '@/app/manager/components/DocumentList'
+import type { Document } from '@/components/DocumentList'
 import { useRouter } from 'next/navigation'
 
 interface DocumentsSectionProps {

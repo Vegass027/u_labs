@@ -77,7 +77,7 @@ export default function ProfileContent({ userData }: ProfileContentProps) {
           ~/profile.ts — настройки профиля
         </h1>
         <p className="text-sm text-muted-foreground">
-          Управление вашим профилем и настройками уведомлений
+          Управление вашим профилем
         </p>
       </div>
 

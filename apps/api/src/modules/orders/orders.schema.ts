@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { OrderStatus, ManagerStatus } from '@agency/types'
+import type { OrderStatus } from '@agency/types'
 
 export const createOrderSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(200),
@@ -24,14 +24,6 @@ export const updateOrderStatusSchema = z.object({
 })
 
 export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>
-
-export const updateManagerStatusSchema = z.object({
-  manager_status: z.enum(['brief_ready', 'negotiation', 'contract', 'cancelled'], {
-    errorMap: () => ({ message: 'Invalid manager status' }),
-  }),
-})
-
-export type UpdateManagerStatusInput = z.infer<typeof updateManagerStatusSchema>
 
 export const setOrderPriceSchema = z.object({
   price: z.number().positive('Price must be a positive number'),

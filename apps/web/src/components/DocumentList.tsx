@@ -1,8 +1,5 @@
 'use client'
 
-import { FileIcon } from './FileIcon'
-import { cn } from '@/lib/utils'
-
 export interface Document {
   name: string
   path: string

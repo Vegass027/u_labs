@@ -24,7 +24,7 @@ export function OwnerSidebar() {
         </SidebarFolder>
 
         <SidebarFolder name="Настройки" defaultOpen={false}>
-          <SidebarFile filename="telegram.ts" href="/settings/telegram" />
+          <SidebarFile filename="profile.ts" href="/dashboard/profile" />
         </SidebarFolder>
       </div>
 
