@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { BriefSection } from './BriefSection'
 import BriefChat from './BriefChat'
-import OrderChatInput from './OrderChatInput'
 import { ManagerStatusDropdown } from './ManagerStatusDropdown'
 import { ProjectInfoPanel } from './ProjectInfoPanel'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionPanel } from '@/components/ui/accordion'
@@ -9,6 +8,7 @@ import Link from 'next/link'
 import { OrderTitleSaver } from './OrderTitleSaver'
 import { unstable_noStore as noStore } from 'next/cache'
 import type { Document } from '@/app/manager/components/DocumentList'
+import ChatWindow from '@/components/chat/ChatWindow'
 
 async function getCurrentUser() {
   const supabase = await createClient()
@@ -190,9 +190,9 @@ export default async function ManagerOrderDetailPage({
         </div>
       )}
 
-      {/* Chat */}
+      {/* Chat with Client */}
       <Accordion className="border border-border rounded-lg overflow-hidden bg-card terminal-glow">
-        <AccordionItem value="chat">
+        <AccordionItem value="chat-client">
           <AccordionTrigger className="px-4 py-3 bg-muted/50 hover:bg-muted/70 transition-colors [&_[data-slot=accordion-indicator]]:hidden items-center">
             <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
               <span className="text-green-500">&gt;&gt;&gt;</span> Чат с клиентом <span className="text-green-500">&lt;&lt;&lt;</span>
@@ -204,12 +204,40 @@ export default async function ManagerOrderDetailPage({
             </div>
           </AccordionTrigger>
           <AccordionPanel className="px-0">
-            <div className="h-96 overflow-y-auto p-4 space-y-4 bg-transparent">
-              <div className="flex items-center justify-center h-full text-muted-foreground font-mono">
-                сообщений пока нет. начните общение.
-              </div>
+            <div className="h-96">
+              <ChatWindow 
+                orderId={order.id} 
+                currentUserId={currentUser.id} 
+                currentUserRole={currentUser.role}
+                messageType="client_manager"
+              />
             </div>
-            <OrderChatInput />
+          </AccordionPanel>
+        </AccordionItem>
+      </Accordion>
+
+      {/* Chat with Owner */}
+      <Accordion className="border border-border rounded-lg overflow-hidden bg-card terminal-glow">
+        <AccordionItem value="chat-owner">
+          <AccordionTrigger className="px-4 py-3 bg-muted/50 hover:bg-muted/70 transition-colors [&_[data-slot=accordion-indicator]]:hidden items-center">
+            <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
+              <span className="text-purple-500">&gt;&gt;&gt;</span> Чат с Product Architect <span className="text-purple-500">&lt;&lt;&lt;</span>
+            </h2>
+            <div className="w-8 h-8 rounded border border-purple-500/50 flex items-center justify-center bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors data-[state=open]:rotate-180">
+              <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </AccordionTrigger>
+          <AccordionPanel className="px-0">
+            <div className="h-96">
+              <ChatWindow 
+                orderId={order.id} 
+                currentUserId={currentUser.id} 
+                currentUserRole={currentUser.role}
+                messageType="manager_owner"
+              />
+            </div>
           </AccordionPanel>
         </AccordionItem>
       </Accordion>

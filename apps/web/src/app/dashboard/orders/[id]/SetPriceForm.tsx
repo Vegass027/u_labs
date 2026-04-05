@@ -37,7 +37,7 @@ export function SetPriceForm({ orderId, currentPrice }: SetPriceFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex-1">
       <h3 className="text-sm font-bold text-foreground font-mono mb-2">
-        <span className="text-[#dcb67a]">//</span> Set Price
+        <span className="text-[#dcb67a]">//</span> оценка проекта
       </h3>
       <div className="flex gap-2">
         <input

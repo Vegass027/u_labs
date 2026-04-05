@@ -2,7 +2,6 @@ import { z } from 'zod'
 
 export const createWithdrawalRequestSchema = z.object({
   amount: z.number().positive('Сумма должна быть положительной'),
-  note: z.string().optional(),
 })
 
 export type CreateWithdrawalRequestInput = z.infer<typeof createWithdrawalRequestSchema>

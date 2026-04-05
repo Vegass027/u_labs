@@ -1,5 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { approveWithdrawal as approveWithdrawalAction, rejectWithdrawal as rejectWithdrawalAction } from '@/app/actions/admin-withdrawals'
+import Link from 'next/link'
+
+interface WithdrawalsPageProps {
+  searchParams: { status?: string }
+}
 
 async function getCurrentUser() {
   const supabase = await createClient()
@@ -19,12 +24,20 @@ async function getCurrentUser() {
   }
 }
 
-async function getWithdrawalRequests() {
+async function getWithdrawalRequests(status?: string) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
   const { data: { session } } = await supabase.auth.getSession()
   
+  console.log('[WITHDRAWALS] user:', user?.id, 'token exists:', !!session?.access_token, 'status filter:', status)
+  
+  const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/withdrawals`)
+  if (status) {
+    url.searchParams.set('status', status)
+  }
+  
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/admin/withdrawals`,
+    url.toString(),
     {
       headers: {
         'Authorization': `Bearer ${session?.access_token || ''}`,
@@ -33,12 +46,17 @@ async function getWithdrawalRequests() {
     }
   )
   
-  if (!response.ok) return []
+  console.log('[WITHDRAWALS] response status:', response.status)
+  if (!response.ok) {
+    const err = await response.json()
+    console.error('[WITHDRAWALS] error:', err)
+    return []
+  }
   
   return await response.json() || []
 }
 
-export default async function WithdrawalsPage() {
+export default async function WithdrawalsPage({ searchParams }: WithdrawalsPageProps) {
   const currentUser = await getCurrentUser()
   
   if (!currentUser || currentUser.role !== 'owner') {
@@ -52,7 +70,7 @@ export default async function WithdrawalsPage() {
     )
   }
   
-  const withdrawals = await getWithdrawalRequests()
+  const withdrawals = await getWithdrawalRequests(searchParams.status || 'pending')
   
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
@@ -62,6 +80,38 @@ export default async function WithdrawalsPage() {
             <span className="text-[#dcb67a]">{'>>>'}</span> Запросы на вывод
           </h1>
         </div>
+        
+        {/* Filter buttons */}
+        <div className="px-4 py-3 border-b border-border">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-mono text-terminal-comment mr-2">// фильтр по статусу:</span>
+            <Link
+              href="/dashboard/withdrawals?status=pending"
+              className={`px-3 py-1.5 rounded text-xs font-mono transition-all ${searchParams.status === 'pending' ? 'bg-primary text-primary-foreground hover:text-glow-sm' : 'bg-card border border-border hover:border-primary/40 text-muted-foreground'}`}
+            >
+              #pending
+            </Link>
+            <Link
+              href="/dashboard/withdrawals?status=approved"
+              className={`px-3 py-1.5 rounded text-xs font-mono transition-all ${searchParams.status === 'approved' ? 'bg-primary text-primary-foreground hover:text-glow-sm' : 'bg-card border border-border hover:border-primary/40 text-muted-foreground'}`}
+            >
+              #approved
+            </Link>
+            <Link
+              href="/dashboard/withdrawals?status=rejected"
+              className={`px-3 py-1.5 rounded text-xs font-mono transition-all ${searchParams.status === 'rejected' ? 'bg-primary text-primary-foreground hover:text-glow-sm' : 'bg-card border border-border hover:border-primary/40 text-muted-foreground'}`}
+            >
+              #rejected
+            </Link>
+            <Link
+              href="/dashboard/withdrawals"
+              className={`px-3 py-1.5 rounded text-xs font-mono transition-all ${!searchParams.status ? 'bg-primary text-primary-foreground hover:text-glow-sm' : 'bg-card border border-border hover:border-primary/40 text-muted-foreground'}`}
+            >
+              #all
+            </Link>
+          </div>
+        </div>
+        
         <div className="divide-y divide-border">
           {withdrawals.length === 0 ? (
             <div className="px-4 py-8 text-center text-muted-foreground text-sm">
@@ -104,10 +154,24 @@ export default async function WithdrawalsPage() {
                         <span className="text-muted-foreground">{'<' + withdrawal.manager?.email + '>'}</span>
                       </div>
                       
-                      {withdrawal.note && (
+                      {(withdrawal.manager_profile?.sbp_phone || withdrawal.manager_profile?.card_number) && (
                         <div className="flex items-start gap-2 text-muted-foreground font-mono">
-                          <span className="text-primary shrink-0">note:</span>
-                          <span className="text-foreground">{withdrawal.note}</span>
+                          <span className="text-primary shrink-0">реквизиты:</span>
+                          <span className="text-foreground">
+                            {withdrawal.manager_profile?.sbp_phone && (
+                              <>СБП: {withdrawal.manager_profile.sbp_phone}</>
+                            )}
+                            {withdrawal.manager_profile?.card_number && (
+                              <>Карта: {withdrawal.manager_profile.card_number}</>
+                            )}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {withdrawal.manager_profile?.sbp_comment && (
+                        <div className="flex items-start gap-2 text-muted-foreground font-mono">
+                          <span className="text-primary shrink-0">комментарий:</span>
+                          <span className="text-foreground">{withdrawal.manager_profile.sbp_comment}</span>
                         </div>
                       )}
                       
@@ -139,9 +203,9 @@ export default async function WithdrawalsPage() {
                           <input type="hidden" name="withdrawalId" value={withdrawal.id} />
                           <button
                             type="submit"
-                            className="px-3 py-1 bg-green-500 text-white rounded text-xs font-medium hover:bg-green-600 transition-colors"
+                            className="px-3 py-1 border border-border rounded text-xs font-medium hover:bg-muted transition-colors"
                           >
-                            одобрить
+                            〖 Yes 〗
                           </button>
                         </form>
                         
@@ -149,9 +213,9 @@ export default async function WithdrawalsPage() {
                           <input type="hidden" name="withdrawalId" value={withdrawal.id} />
                           <button
                             type="submit"
-                            className="px-3 py-1 bg-red-500 text-white rounded text-xs font-medium hover:bg-red-600 transition-colors"
+                            className="px-3 py-1 border border-border rounded text-xs font-medium hover:bg-muted transition-colors"
                           >
-                            отклонить
+                            〖 No 〗
                           </button>
                         </form>
                       </div>

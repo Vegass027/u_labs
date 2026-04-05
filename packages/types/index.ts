@@ -68,7 +68,7 @@ export interface Order {
 // ------------------------------------------------------------
 // Manager Profile
 // ------------------------------------------------------------
-
+ 
 export interface ManagerProfile {
   id: string
   user_id: string
@@ -76,6 +76,9 @@ export interface ManagerProfile {
   balance_payable: number
   balance_paid: number
   total_orders: number
+  sbp_phone?: string | null
+  card_number?: string | null
+  sbp_comment?: string | null
   created_at: string
   updated_at: string
 }
@@ -129,16 +132,31 @@ export interface Notification {
 // ------------------------------------------------------------
 // Withdrawal Request
 // ------------------------------------------------------------
-
+ 
 export type WithdrawalStatus = 'pending' | 'approved' | 'rejected'
-
+ 
 export interface WithdrawalRequest {
   id: string
   manager_user_id: string
   amount: number
   status: WithdrawalStatus
-  note?: string | null
   processed_at?: string | null
   created_at: string
   updated_at: string
+  manager?: User | null
+  manager_profile?: {
+    sbp_phone?: string | null
+    card_number?: string | null
+    sbp_comment?: string | null
+  } | null
+}
+
+// ------------------------------------------------------------
+// Payment Details
+// ------------------------------------------------------------
+ 
+export interface PaymentDetails {
+  sbp_phone?: string | null
+  card_number?: string | null
+  sbp_comment?: string | null
 }

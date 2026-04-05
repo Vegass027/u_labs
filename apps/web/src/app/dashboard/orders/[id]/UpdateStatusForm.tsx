@@ -76,7 +76,7 @@ export function UpdateStatusForm({ orderId, currentStatus }: UpdateStatusFormPro
   return (
     <div className="flex-1">
       <h3 className="text-sm font-bold text-foreground font-mono mb-2">
-        <span className="text-[#dcb67a]">//</span> Update Status
+        <span className="text-[#dcb67a]">//</span> обновить статус
       </h3>
       <div className="relative z-50">
         <button

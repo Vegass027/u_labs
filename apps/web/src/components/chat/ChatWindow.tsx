@@ -22,9 +22,15 @@ interface ChatWindowProps {
   orderId: string;
   currentUserId: string;
   currentUserRole: string;
+  messageType?: 'client_manager' | 'manager_owner';
 }
 
-export default function ChatWindow({ orderId, currentUserId, currentUserRole }: ChatWindowProps) {
+export default function ChatWindow({ 
+  orderId, 
+  currentUserId, 
+  currentUserRole, 
+  messageType = 'client_manager'
+}: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -38,7 +44,7 @@ export default function ChatWindow({ orderId, currentUserId, currentUserRole }: 
 
   useEffect(() => {
     const channel = supabase
-      .channel(`order-messages-${orderId}`)
+      .channel(`order-messages-${orderId}-${messageType}`)
       .on(
         'postgres_changes',
         {
@@ -50,6 +56,9 @@ export default function ChatWindow({ orderId, currentUserId, currentUserRole }: 
         async (payload) => {
           console.log('[Realtime] new message payload:', payload.new);
           const m = payload.new as any;
+
+          // Фильтруем сообщения по типу на клиенте
+          if (m.message_type !== messageType) return;
 
           // Загружаем имя отправителя из таблицы users
           const { data: userData } = await supabase
@@ -83,7 +92,7 @@ export default function ChatWindow({ orderId, currentUserId, currentUserRole }: 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [orderId]); // supabase больше не в deps — не пересоздаётся
+  }, [orderId, messageType]); // supabase больше не в deps — не пересоздаётся
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -93,7 +102,9 @@ export default function ChatWindow({ orderId, currentUserId, currentUserRole }: 
     try {
       setIsLoading(true);
       setError(null);
-      const result = await api.get<Message[]>(`/api/orders/${orderId}/messages`);
+      const result = await api.get<Message[]>(
+        `/api/orders/${orderId}/messages${messageType ? `?type=${messageType}` : ''}`
+      );
       if (result.error) throw new Error(result.error);
       setMessages(result.data || []);
     } catch (err) {
@@ -110,6 +121,7 @@ export default function ChatWindow({ orderId, currentUserId, currentUserRole }: 
       setError(null);
       const result = await api.post<Message>(`/api/orders/${orderId}/messages`, {
         content,
+        message_type: messageType,
       });
       if (result.error) throw new Error(result.error);
       setContent('');
@@ -140,12 +152,8 @@ export default function ChatWindow({ orderId, currentUserId, currentUserRole }: 
   };
 
   return (
-    <div className="bg-card rounded-lg shadow border border-border overflow-hidden terminal-glow">
-      <div className="px-4 py-3 border-b border-border bg-muted/50">
-        <h3 className="font-semibold text-foreground font-mono">чат заказа</h3>
-      </div>
-
-      <div className="h-96 overflow-y-auto p-4 space-y-4">
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
         {isLoading ? (
           <div className="flex items-center justify-center h-full text-muted-foreground font-mono">
             загрузка сообщений...
@@ -196,9 +204,8 @@ export default function ChatWindow({ orderId, currentUserId, currentUserRole }: 
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="введите сообщение... (enter для отправки, shift+enter для новой строки)"
-            className="flex-1 border border-border rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-primary/50 bg-card text-foreground font-mono terminal-cursor-block"
-            rows={2}
+            className="flex-1 border border-border rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-primary/50 bg-card text-primary font-mono terminal-cursor-block"
+            rows={1}
             disabled={isSending}
           />
           <button

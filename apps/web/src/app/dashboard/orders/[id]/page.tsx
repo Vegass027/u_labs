@@ -137,7 +137,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
           </div>
           <div className="px-4 py-2">
             <div className="flex items-center gap-2 text-sm text-muted-foreground font-mono">
-              <span className="text-primary">created_at:</span>
+              <span className="text-primary">создана:</span>
               <span>[{new Date(order.created_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })}]</span>
             </div>
           </div>
@@ -294,12 +294,12 @@ export default async function OrderDetailPage({ params }: { params: { id: string
         </AccordionItem>
       </Accordion>
 
-      {/* Chat */}
+      {/* Chat with Client */}
       <Accordion className="border border-border rounded-lg overflow-hidden bg-card terminal-glow">
-        <AccordionItem value="chat">
+        <AccordionItem value="chat-client">
           <AccordionTrigger className="px-4 py-3 bg-muted/50 hover:bg-muted/70 transition-colors [&_[data-slot=accordion-indicator]]:hidden items-center">
             <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
-              <span className="text-green-500">{'>>>'}</span> Чат <span className="text-green-500">{'<<<'}</span>
+              <span className="text-green-500">{'>>>'}</span> Чат с клиентом <span className="text-green-500">{'<<<'}</span>
             </h2>
             <div className="w-8 h-8 rounded border border-green-500/50 flex items-center justify-center bg-green-500/10 group-hover:bg-green-500/20 transition-colors data-[state=open]:rotate-180">
               <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -309,7 +309,38 @@ export default async function OrderDetailPage({ params }: { params: { id: string
           </AccordionTrigger>
           <AccordionPanel className="px-0">
             <div className="h-96">
-              <ChatWindow orderId={order.id} currentUserId={currentUser.id} currentUserRole={currentUser.role} />
+              <ChatWindow 
+                orderId={order.id} 
+                currentUserId={currentUser.id} 
+                currentUserRole={currentUser.role}
+                messageType="client_manager"
+              />
+            </div>
+          </AccordionPanel>
+        </AccordionItem>
+      </Accordion>
+
+      {/* Chat with Manager */}
+      <Accordion className="border border-border rounded-lg overflow-hidden bg-card terminal-glow">
+        <AccordionItem value="chat-manager">
+          <AccordionTrigger className="px-4 py-3 bg-muted/50 hover:bg-muted/70 transition-colors [&_[data-slot=accordion-indicator]]:hidden items-center">
+            <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
+              <span className="text-[#dcb67a]">{'>>>'}</span> Чат с менеджером <span className="text-[#dcb67a]">{'<<<'}</span>
+            </h2>
+            <div className="w-8 h-8 rounded border border-[#dcb67a]/50 flex items-center justify-center bg-[#dcb67a]/10 group-hover:bg-[#dcb67a]/20 transition-colors data-[state=open]:rotate-180">
+              <svg className="w-4 h-4 text-[#dcb67a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </AccordionTrigger>
+          <AccordionPanel className="px-0">
+            <div className="h-96">
+              <ChatWindow 
+                orderId={order.id} 
+                currentUserId={currentUser.id} 
+                currentUserRole={currentUser.role}
+                messageType="manager_owner"
+              />
             </div>
           </AccordionPanel>
         </AccordionItem>

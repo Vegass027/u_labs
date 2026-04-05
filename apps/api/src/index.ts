@@ -15,6 +15,7 @@ import { telegramRoutes } from './modules/notifications/telegram.routes'
 import { documentsRoutes } from './modules/documents/documents.routes'
 import { avatarRoutes } from './modules/storage/avatar.routes'
 import { withdrawalsRoutes } from './modules/withdrawals/withdrawals.routes'
+import { managerRoutes } from './modules/manager/manager.routes'
 
 const server = Fastify({
   logger: {
@@ -69,6 +70,9 @@ server.register(avatarRoutes)
 
 // Withdrawals routes
 server.register(withdrawalsRoutes)
+
+// Manager routes
+server.register(managerRoutes)
 
 // Health check
 server.get('/health', async () => {

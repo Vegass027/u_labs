@@ -5,6 +5,7 @@ import {
   listAllWithdrawalRequests,
   approveWithdrawal,
   rejectWithdrawal,
+  cancelWithdrawal,
 } from './withdrawals.service'
 import {
   createWithdrawalRequestSchema,
@@ -57,12 +58,34 @@ export async function withdrawalsRoutes(fastify: FastifyInstance) {
     }
   )
 
+  fastify.delete(
+    '/api/manager/withdrawals/:id',
+    { preHandler: [requireAuth, requireRole('manager')] },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      try {
+        if (!req.user) {
+          return reply.status(401).send({ error: 'Unauthorized' })
+        }
+        const { id } = req.params as { id: string }
+        await cancelWithdrawal(id, req.user.id)
+        return reply.send({ success: true })
+      } catch (error) {
+        if (error instanceof AppError) {
+          return reply.status(error.statusCode).send({ error: error.message, code: error.code })
+        }
+        logger.error({ error }, 'Unexpected error in DELETE /api/manager/withdrawals/:id')
+        return reply.status(500).send({ error: 'Internal server error' })
+      }
+    }
+  )
+
   fastify.get(
     '/api/admin/withdrawals',
     { preHandler: [requireAuth, requireRole('owner')] },
     async (req: FastifyRequest, reply: FastifyReply) => {
       try {
-        const withdrawals = await listAllWithdrawalRequests()
+        const { status } = req.query as { status?: string }
+        const withdrawals = await listAllWithdrawalRequests(status)
         return reply.send(withdrawals)
       } catch (error) {
         if (error instanceof AppError) {

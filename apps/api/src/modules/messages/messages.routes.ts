@@ -13,8 +13,9 @@ export async function messagesRoutes(fastify: FastifyInstance) {
       const { id: orderId } = req.params as { id: string };
       const userId = (req as any).user.id;
       const userRole = (req as any).user.role;
+      const { type } = req.query as { type?: 'client_manager' | 'manager_owner' };
 
-      const messages = await getOrderMessages(orderId, userId, userRole);
+      const messages = await getOrderMessages(orderId, userId, userRole, type);
       return reply.send(messages);
     }
   );
@@ -29,7 +30,7 @@ export async function messagesRoutes(fastify: FastifyInstance) {
       const userRole = (req as any).user.role;
       const body = sendMessageSchema.parse(req.body);
 
-      const message = await sendMessage(orderId, userId, body.content, userRole);
+      const message = await sendMessage(orderId, userId, body.content, userRole, body.message_type);
       return reply.status(201).send(message);
     }
   );

@@ -4,7 +4,12 @@ import { logger } from '../../utils/logger';
 import { notifyNewMessage } from '../notifications/telegram.service';
 import { createNotification } from '../notifications/notifications.service';
 
-export async function getOrderMessages(orderId: string, userId: string, userRole: string) {
+export async function getOrderMessages(
+  orderId: string, 
+  userId: string, 
+  userRole: string,
+  messageType?: 'client_manager' | 'manager_owner'
+) {
   // Проверка доступа к заказу
   const { data: order, error: orderError } = await supabase
     .from('orders')
@@ -23,15 +28,20 @@ export async function getOrderMessages(orderId: string, userId: string, userRole
     throw new ForbiddenError('Access denied');
   }
 
-  // Загружаем сообщения с именами отправителей
-  const { data: messages, error } = await supabase
+  // Загружаем сообщения с именами отправителей и фильтрацией по типу
+  let query = supabase
     .from('order_messages')
     .select(`
       *,
       sender:users!order_messages_sender_id_fkey(full_name)
     `)
-    .eq('order_id', orderId)
-    .order('created_at', { ascending: true });
+    .eq('order_id', orderId);
+
+  if (messageType) {
+    query = query.eq('message_type', messageType);
+  }
+
+  const { data: messages, error } = await query.order('created_at', { ascending: true });
 
   if (error) {
     logger.error({ error, orderId }, 'Failed to fetch order messages');
@@ -49,7 +59,13 @@ export async function getOrderMessages(orderId: string, userId: string, userRole
   })) || [];
 }
 
-export async function sendMessage(orderId: string, senderId: string, content: string, userRole: string) {
+export async function sendMessage(
+  orderId: string, 
+  senderId: string, 
+  content: string, 
+  userRole: string,
+  messageType: 'client_manager' | 'manager_owner'
+) {
   // Проверка доступа к заказу
   const { data: order, error: orderError } = await supabase
     .from('orders')
@@ -68,13 +84,14 @@ export async function sendMessage(orderId: string, senderId: string, content: st
     throw new ForbiddenError('Access denied');
   }
 
-  // Создаем сообщение
+  // Создаем сообщение с указанным типом
   const { data: message, error } = await supabase
     .from('order_messages')
     .insert({
       order_id: orderId,
       sender_id: senderId,
       content,
+      message_type: messageType,
     })
     .select(`
       *,
