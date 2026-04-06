@@ -5,7 +5,11 @@ import { config } from '../../config'
 import type { Order, OrderStatus } from '@agency/types'
 import type { CreateOrderInput, CreateManagerOrderInput, ListOrdersInput } from './orders.schema'
 import { notifyNewOrder, notifyStatusChange } from '../notifications/telegram.service'
-import { createNotification } from '../notifications/notifications.service'
+import {
+  createNewOrderNotification,
+  createStatusChangeNotification,
+  createPriceSetNotification,
+} from '../notifications/notifications.service'
 
 export async function createOrder(input: CreateOrderInput, clientUserId: string): Promise<Order> {
   logger.info({ clientUserId, title: input.title }, 'Creating new order')
@@ -45,13 +49,7 @@ export async function createOrder(input: CreateOrderInput, clientUserId: string)
     .single()
 
   if (ownerData) {
-    await createNotification(
-      ownerData.id,
-      data.id,
-      'new_order',
-      'Новая заявка',
-      data.title
-    )
+    await createNewOrderNotification(ownerData.id, data.id, data.title)
   }
 
   return data
@@ -115,13 +113,7 @@ export async function createManagerOrder(input: CreateManagerOrderInput, manager
     .single()
 
   if (ownerData) {
-    await createNotification(
-      ownerData.id,
-      order.id,
-      'new_order',
-      'Новая заявка',
-      order.title
-    )
+    await createNewOrderNotification(ownerData.id, order.id, order.title)
   }
 
   return order
@@ -251,13 +243,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus, us
       await notifyStatusChange(data, status, managerData.telegram_chat_id)
     }
 
-    await createNotification(
-      data.manager_user_id,
-      data.id,
-      'status_change',
-      'Статус заявки изменён',
-      data.title
-    )
+    await createStatusChangeNotification(data.manager_user_id, data.id, data.title, status)
   }
 
   if (data.client_user_id) {
@@ -271,13 +257,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus, us
       await notifyStatusChange(data, status, clientData.telegram_chat_id)
     }
 
-    await createNotification(
-      data.client_user_id,
-      data.id,
-      'status_change',
-      'Статус заявки изменён',
-      data.title
-    )
+    await createStatusChangeNotification(data.client_user_id, data.id, data.title, status)
   }
 
   return data
@@ -305,6 +285,15 @@ export async function setOrderPrice(orderId: string, price: number, userId: stri
 
   logger.info({ orderId, price, managerCommission }, 'Order price set successfully')
 
+  // Send notifications to client and manager
+  if (data.client_user_id) {
+    await createPriceSetNotification(data.client_user_id, data.id, data.title, price)
+  }
+
+  if (data.manager_user_id) {
+    await createPriceSetNotification(data.manager_user_id, data.id, data.title, price)
+  }
+
   return data
 }
 
@@ -313,7 +302,7 @@ export async function updateOrderRawText(orderId: string, rawText: string, userI
 
   const { data, error } = await supabase
     .from('orders')
-    .update({ 
+    .update({
       raw_text: rawText,
       structured_brief: null
     })
@@ -329,5 +318,43 @@ export async function updateOrderRawText(orderId: string, rawText: string, userI
   logger.info({ orderId }, 'Order raw_text updated successfully, structured_brief cleared')
 
   return data
+}
+
+export async function deleteAiChat(orderId: string, userId: string, userRole: string): Promise<void> {
+  logger.info({ orderId, userId, userRole }, 'Deleting AI chat messages')
+
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .select('client_user_id, manager_user_id')
+    .eq('id', orderId)
+    .single()
+
+  if (orderError || !order) {
+    logger.error({ error: orderError, orderId }, 'Failed to fetch order')
+    throw new NotFoundError('Order not found')
+  }
+
+  if (userRole === 'client' && order.client_user_id !== userId) {
+    logger.warn({ orderId, userId }, 'Unauthorized attempt to delete AI chat')
+    throw new ForbiddenError('Unauthorized')
+  }
+
+  if (userRole === 'manager' && order.manager_user_id !== userId) {
+    logger.warn({ orderId, userId }, 'Unauthorized attempt to delete AI chat')
+    throw new ForbiddenError('Unauthorized')
+  }
+
+  const { error: deleteError } = await supabase
+    .from('ai_chat_messages')
+    .delete()
+    .eq('order_id', orderId)
+    .eq('user_role', userRole)
+
+  if (deleteError) {
+    logger.error({ error: deleteError, orderId }, 'Failed to delete AI chat messages')
+    throw new AppError('Failed to delete AI chat', 500)
+  }
+
+  logger.info({ orderId, userRole }, 'AI chat messages deleted successfully')
 }
 

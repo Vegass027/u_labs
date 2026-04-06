@@ -2,7 +2,7 @@ import OpenAI from 'openai'
 import { config, openaiConfig } from '../../config'
 import { logger } from '../../utils/logger'
 import { AppError } from '../../utils/errors'
-import { StructuredBrief } from '@agency/types'
+import { StructuredBrief, IndustryContext } from '@agency/types'
 import { BRIEF_SYSTEM_PROMPT, buildBriefUserPrompt } from './brief.prompt'
 import { BRIEF_CHAT_SYSTEM_PROMPT } from './brief-chat.prompt'
 import { supabase } from '../../db/client'
@@ -94,6 +94,65 @@ export async function processTextToBrief(rawText: string): Promise<{ brief: Stru
   return { brief }
 }
 
+async function getIndustryContext(orderId: string): Promise<string> {
+  const { data: order } = await supabase
+    .from('orders')
+    .select('title, raw_text, industry_id')
+    .eq('id', orderId)
+    .single()
+
+  if (!order) return ''
+
+  if (order.industry_id) {
+    const { data: industry } = await supabase
+      .from('industry_contexts')
+      .select('*')
+      .eq('id', order.industry_id)
+      .single()
+    return industry ? formatIndustryContext(industry) : ''
+  }
+
+  const { data: industries } = await supabase
+    .from('industry_contexts')
+    .select('*')
+    .eq('is_active', true)
+
+  if (!industries) return ''
+
+  const text = `${order.title} ${order.raw_text || ''}`.toLowerCase()
+  
+  const matched = industries.find((industry: IndustryContext) =>
+    industry.keywords.some((kw: string) => {
+      const regex = new RegExp(`\\b${kw.toLowerCase()}\\b`)
+      return regex.test(text)
+    })
+  )
+
+  if (matched) {
+    await supabase
+      .from('orders')
+      .update({ industry_id: matched.id })
+      .eq('id', orderId)
+    
+    return formatIndustryContext(matched)
+  }
+
+  return ''
+}
+
+function formatIndustryContext(industry: IndustryContext): string {
+  return `
+КОНТЕКСТ НИШИ: ${industry.name}
+Типичные боли: ${industry.pains}
+Роли в системе: ${industry.roles}
+Типичные процессы: ${industry.processes}
+Типичные интеграции: ${industry.integrations}
+Ключевые метрики: ${industry.metrics}
+MVP приоритеты: ${industry.first_release}
+Частые заблуждения: ${industry.misconceptions}
+`.trim()
+}
+
 export async function getAiChatHistory(orderId: string, userId: string, userRole: string) {
   const { data: order, error: orderError } = await supabase
     .from('orders')
@@ -113,6 +172,7 @@ export async function getAiChatHistory(orderId: string, userId: string, userRole
     .from('ai_chat_messages')
     .select('id, role, content, created_at')
     .eq('order_id', orderId)
+    .eq('user_role', userRole)
     .order('created_at', { ascending: true })
 
   if (error) {
@@ -144,11 +204,11 @@ export async function sendAiChatMessage(
   }
 
   const history = await getAiChatHistory(orderId, userId, userRole)
+  const industryContext = await getIndustryContext(orderId)
 
-  const systemPrompt = BRIEF_CHAT_SYSTEM_PROMPT.replace(
-    '{ORDER_CONTEXT}',
-    `Название: ${order.title}. Уже известно: ${order.raw_text || 'ничего'}`
-  )
+  const systemPrompt = BRIEF_CHAT_SYSTEM_PROMPT
+    .replace('{ORDER_CONTEXT}', `Название: ${order.title}. Уже известно: ${order.raw_text || 'ничего'}`)
+    .replace('{INDUSTRY_CONTEXT}', industryContext)
 
   try {
     const response = await openai.chat.completions.create({
@@ -169,12 +229,16 @@ export async function sendAiChatMessage(
     await supabase.from('ai_chat_messages').insert({
       order_id: orderId,
       role: 'user',
+      user_id: userId,
+      user_role: userRole,
       content: message,
     })
 
     await supabase.from('ai_chat_messages').insert({
       order_id: orderId,
       role: 'assistant',
+      user_id: null,
+      user_role: userRole,
       content: aiResponse,
     })
 
@@ -219,6 +283,7 @@ export async function processDocumentToChat(
   }
 
   const history = await getAiChatHistory(orderId, userId, userRole)
+  const industryContext = await getIndustryContext(orderId)
 
   // Добавляем содержимое документа в контекст заказа
   const existingContext = order.raw_text || 'ничего'
@@ -226,10 +291,9 @@ export async function processDocumentToChat(
     ? `Содержимое загруженного документа:\n\n${fileContent}`
     : `${existingContext}\n\nСодержимое загруженного документа:\n\n${fileContent}`
 
-  const systemPrompt = BRIEF_CHAT_SYSTEM_PROMPT.replace(
-    '{ORDER_CONTEXT}',
-    `Название: ${order.title}. Уже известно: ${updatedContext}`
-  )
+  const systemPrompt = BRIEF_CHAT_SYSTEM_PROMPT
+    .replace('{ORDER_CONTEXT}', `Название: ${order.title}. Уже известно: ${updatedContext}`)
+    .replace('{INDUSTRY_CONTEXT}', industryContext)
 
   logger.info({ fileName, fileContentLength: fileContent.length, fileContentPreview: fileContent.substring(0, 500) }, 'Processing document to chat')
 
@@ -255,12 +319,16 @@ export async function processDocumentToChat(
     await supabase.from('ai_chat_messages').insert({
       order_id: orderId,
       role: 'user',
+      user_id: userId,
+      user_role: userRole,
       content: `📎 Загружен файл: ${fileName}`,
     })
 
     await supabase.from('ai_chat_messages').insert({
       order_id: orderId,
       role: 'assistant',
+      user_id: null,
+      user_role: userRole,
       content: aiResponse,
     })
 

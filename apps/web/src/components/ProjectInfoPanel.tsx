@@ -1,14 +1,16 @@
 'use client'
 
 import { DocumentList, Document } from './DocumentList'
+import { DocumentUploadSection } from '@/app/dashboard/components/DocumentUploadSection'
 
 interface ProjectInfoPanelProps {
   price: number | null
   documents: Document[]
   orderId: string
+  currentUserId?: string
 }
 
-export function ProjectInfoPanel({ price, documents, orderId }: ProjectInfoPanelProps) {
+export function ProjectInfoPanel({ price, documents, orderId, currentUserId }: ProjectInfoPanelProps) {
   const handleDownload = (url: string, name: string) => {
     const link = document.createElement('a')
     link.href = url
@@ -55,7 +57,7 @@ export function ProjectInfoPanel({ price, documents, orderId }: ProjectInfoPanel
             Документы по проекту
           </h3>
         </div>
-        <DocumentList documents={documents} onDownload={handleDownload} canDelete={false} />
+        <DocumentList documents={documents} onDownload={handleDownload} canDelete={!!currentUserId} currentUserId={currentUserId} orderId={orderId} />
       </div>
     </div>
   )

@@ -25,6 +25,7 @@ export function OwnerSidebar() {
 
         <SidebarFolder name="Настройки" defaultOpen={false}>
           <SidebarFile filename="profile.ts" href="/dashboard/profile" />
+          <SidebarFile filename="industries.ts" href="/dashboard/industries" />
         </SidebarFolder>
       </div>
 

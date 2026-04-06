@@ -232,20 +232,13 @@ export default function ClientHeader({ currentUserId, userName, userEmail, avata
       </div>
 
       {/* Logout Button */}
-      <div
+      <button
         onClick={handleLogout}
-        className="flex items-center gap-2 group cursor-pointer"
+        disabled={isLoggingOut}
+        className="px-3 py-1.5 border border-green-500 text-green-500 rounded hover:bg-green-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-mono text-sm"
       >
-        <span className="text-[10px] text-muted-foreground font-mono group-hover:text-primary transition-colors">
-          // exit
-        </span>
-        <button
-          disabled={isLoggingOut}
-          className="w-6 h-6 rounded bg-primary/20 text-primary font-mono text-xs hover:bg-primary hover:text-background transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          ~
-        </button>
-      </div>
+        {isLoggingOut ? '...' : ' //~exit'}
+      </button>
     </div>
   )
 }

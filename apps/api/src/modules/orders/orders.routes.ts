@@ -9,6 +9,7 @@ import {
   updateOrderStatus,
   setOrderPrice,
   updateOrderRawText,
+  deleteAiChat,
 } from './orders.service'
 import {
   createOrderSchema,
@@ -151,8 +152,8 @@ export async function ordersRoutes(fastify: FastifyInstance) {
   )
 
   fastify.delete(
-    '/api/manager/orders/:id/ai-chat',
-    { preHandler: [requireAuth, requireRole('manager', 'owner')] },
+    '/api/orders/:id/ai-chat',
+    { preHandler: [requireAuth, requireRole('client', 'manager', 'owner')] },
     async (req: FastifyRequest, reply: FastifyReply) => {
       try {
         if (!req.user) {
@@ -160,24 +161,14 @@ export async function ordersRoutes(fastify: FastifyInstance) {
         }
         const { id } = req.params as { id: string }
 
-        const { error: deleteError } = await supabase
-          .from('ai_chat_messages')
-          .delete()
-          .eq('order_id', id)
-
-        if (deleteError) {
-          logger.error({ error: deleteError, orderId: id }, 'Failed to delete AI chat messages')
-          throw new AppError('Failed to delete AI chat', 500)
-        }
-
-        logger.info({ orderId: id }, 'AI chat messages deleted successfully')
+        await deleteAiChat(id, req.user.id, req.user.role)
 
         return reply.status(204).send()
       } catch (error) {
         if (error instanceof AppError) {
           return reply.status(error.statusCode).send({ error: error.message, code: error.code })
         }
-        logger.error({ error }, 'Unexpected error in DELETE /api/manager/orders/:id/ai-chat')
+        logger.error({ error }, 'Unexpected error in DELETE /api/orders/:id/ai-chat')
         return reply.status(500).send({ error: 'Internal server error' })
       }
     }

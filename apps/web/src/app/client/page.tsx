@@ -74,7 +74,7 @@ export default async function ClientPage() {
                 className="flex items-center hover:bg-muted/50 transition-all duration-200 hover:shadow-[0_4px_20px_-4px_rgba(74,222,128,0.3),0_-4px_20px_-4px_rgba(74,222,128,0.3)] rounded px-3 py-4 group"
               >
                 {/* Code content with fixed columns */}
-                <div className="flex-1 flex items-center gap-4">
+                <div className="flex-1 flex items-center gap-8">
                   {/* Arrow indicator */}
                   <span className="text-[#dcb67a] text-xs shrink-0">
                     &gt;&gt;&gt;
@@ -94,9 +94,11 @@ export default async function ClientPage() {
                   <span className="w-8 shrink-0"></span>
 
                   {/* Manager - fixed width */}
-                  <span className="text-muted-foreground w-44 shrink-0 truncate">
-                    {'〖' + (order.manager?.full_name || order.manager?.email || 'Не назначен') + '〗'}
-                  </span>
+                  {(order.manager?.full_name || order.manager?.email) && (
+                    <span className="text-muted-foreground w-44 shrink-0 truncate">
+                      {'〖' + (order.manager?.full_name || order.manager?.email) + '〗'}
+                    </span>
+                  )}
 
                   {/* Date - fixed width */}
                   <span className="text-muted-foreground/60 text-xs w-36 shrink-0">

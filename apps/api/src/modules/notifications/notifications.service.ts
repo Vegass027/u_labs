@@ -1,12 +1,27 @@
 import { supabase } from '../../db/client';
 import { logger } from '../../utils/logger';
+import type { OrderStatus } from '@agency/types';
 
 export interface CreateNotificationInput {
   userId: string;
   orderId: string;
-  type: 'new_order' | 'status_change' | 'new_message';
+  type: 'new_order' | 'status_change' | 'new_message' | 'price_set';
   title: string;
   body?: string;
+}
+
+const statusLabels: Record<OrderStatus, string> = {
+  new: 'Новая',
+  reviewing: 'На рассмотрении',
+  proposal_sent: 'Предложение отправлено',
+  contract_signed: 'Договор подписан',
+  in_development: 'В разработке',
+  done: 'Завершён',
+  rejected: 'Отклонён',
+};
+
+function formatPrice(price: number): string {
+  return new Intl.NumberFormat('ru-RU').format(price) + ' ₽';
 }
 
 /**
@@ -15,7 +30,7 @@ export interface CreateNotificationInput {
 export async function createNotification(
   userId: string,
   orderId: string,
-  type: 'new_order' | 'status_change' | 'new_message',
+  type: 'new_order' | 'status_change' | 'new_message' | 'price_set',
   title: string,
   body?: string
 ): Promise<void> {
@@ -35,6 +50,60 @@ export async function createNotification(
   } catch (error) {
     logger.error('Failed to create notification', { error, userId, orderId, type });
   }
+}
+
+export async function createNewOrderNotification(userId: string, orderId: string, orderTitle: string): Promise<void> {
+  await createNotification(
+    userId,
+    orderId,
+    'new_order',
+    'Заявка принята',
+    `Ожидайте ответа команды по проекту "${orderTitle}"`
+  );
+}
+
+export async function createStatusChangeNotification(
+  userId: string,
+  orderId: string,
+  orderTitle: string,
+  newStatus: OrderStatus
+): Promise<void> {
+  await createNotification(
+    userId,
+    orderId,
+    'status_change',
+    'Статус проекта изменён',
+    `"${orderTitle}" → ${statusLabels[newStatus]}`
+  );
+}
+
+export async function createPriceSetNotification(
+  userId: string,
+  orderId: string,
+  orderTitle: string,
+  price: number
+): Promise<void> {
+  await createNotification(
+    userId,
+    orderId,
+    'price_set',
+    'Выставлена стоимость',
+    `По проекту "${orderTitle}": ${formatPrice(price)}`
+  );
+}
+
+export async function createNewMessageNotification(
+  userId: string,
+  orderId: string,
+  orderTitle: string
+): Promise<void> {
+  await createNotification(
+    userId,
+    orderId,
+    'new_message',
+    'Команда ответила',
+    `Новое сообщение по проекту "${orderTitle}"`
+  );
 }
 
 /**

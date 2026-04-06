@@ -15,6 +15,24 @@
 - Shared типы — только в `packages/types/index.ts`. Никогда не дублировать типы между фронтом и бэком.
 - Конфиг только через `config.ts` с Zod-валидацией. Никаких `process.env.VAR` напрямую в бизнес-коде.
 
+```
+## Server Components — прямой доступ к БД
+
+ЗАПРЕЩЕНО в Server Components:
+  fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/...`)
+  — это HTTP запрос к своему же серверу, лишний round-trip
+
+ПРАВИЛЬНО — обращаться напрямую через Supabase клиент:
+  const supabase = createClient() // server client
+  const { data } = await supabase.from('table').select(...)
+
+Правило: Server Component → Supabase напрямую.
+         Client Component → fetch через api.ts (через Fastify API).
+
+Fastify API нужен только для мутаций с бизнес-логикой (валидация, триггеры, AI).
+Для чтения данных в Server Components — всегда Supabase напрямую.
+```
+
 
 ## Структура компонентов
 
@@ -168,3 +186,87 @@ export type CreateOrderInput = z.infer<typeof createOrderSchema>
 - Middleware — использовать `jwtDecode` для чтения роли из cookie без HTTP запроса к Supabase. Chunked cookies собирать из `.0` и `.1` частей перед декодированием.
 - Server Actions для мутаций — всегда получать токен через `supabase.auth.getSession()` после `getUser()` и передавать в `Authorization` заголовке к Fastify API.
 - `auth.users` содержит обязательные поля (`email_change`, `phone_change`, `recovery_token` и др.) которые не могут быть NULL — при ручном создании пользователей всегда заполнять пустыми строками.
+
+```
+## Realtime подписки — универсальные правила
+
+### Где создавать
+Только в Client Components ('use client').
+Никогда в Server Components, никогда в layout если данные специфичны для страницы.
+
+### Канонический шаблон — всегда такой, без вариантов
+
+'use client'
+
+useEffect(() => {
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
+  const channel = supabase
+    .channel('уникальное-имя-канала') 
+    .on('postgres_changes', {
+      event: 'UPDATE',        // INSERT | UPDATE | DELETE | *
+      schema: 'public',
+      table: 'table_name',
+      filter: `id=eq.${id}`  // ВСЕГДА фильтр
+    }, (payload) => {
+      router.refresh()        // или setLocalState(payload.new)
+    })
+    .subscribe()
+
+  return () => {
+    supabase.removeChannel(channel) // ВСЕГДА отписка
+  }
+}, [id]) // только стабильные значения в deps
+
+### Жёсткие запреты
+
+// ❌ Клиент вне useEffect
+const supabase = createBrowserClient(...) // пересоздаётся на каждый рендер
+
+// ❌ Без фильтра
+table: 'orders' // без filter — получишь все изменения всех строк
+
+// ❌ Одинаковые имена каналов в разных компонентах
+.channel('orders') // конфликт — второй перебьёт первый
+
+// ❌ Без отписки
+useEffect(() => {
+  channel.subscribe()
+  // нет return — утечка памяти
+}, [])
+
+// ❌ Async/await и тяжёлая логика в колбэке
+(payload) => {
+  await fetch('/api/...') // нельзя
+}
+
+### Именование каналов
+Формат: сущность-действие-уникальныйId
+Примеры: 'order-updates-ec05ad5c'
+         'user-notifications-abc123'
+         'chat-messages-orderId'
+
+### Когда подписка нужна, когда нет
+Нужна: данные меняются пока пользователь на странице 
+       и он должен видеть изменение без перезагрузки страницы.
+
+Не нужна: данные читаются один раз при загрузке и не меняются 
+          пока пользователь сидит на странице.
+
+### Проверка что таблица добавлена в Replication
+Если подписка не работает — первое что проверить:
+
+SELECT tablename FROM pg_publication_tables 
+WHERE pubname = 'supabase_realtime';
+
+Если таблицы нет — добавить:
+ALTER PUBLICATION supabase_realtime ADD TABLE table_name;
+
+### Не дублировать подписки
+Если компонент A уже подписан на таблицу X —
+компонент B на той же странице не должен создавать вторую подписку на X.
+Поднять подписку выше или передавать данные через props/context.
+```

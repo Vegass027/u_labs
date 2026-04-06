@@ -32,21 +32,33 @@ export function OwnerTabManager() {
     if (pathname.startsWith('/dashboard') || pathname.startsWith('/settings')) {
       // Check if it's an order detail page
       const orderMatch = pathname.match(/^\/dashboard\/orders\/([^\/]+)$/)
+      const industryMatch = pathname.match(/^\/dashboard\/industries\/([^\/]+)$/)
       
       let filename: string
       if (orderMatch) {
         // Try to get order title from localStorage
         const orderId = orderMatch[1]
         const storedTitle = localStorage.getItem(`order_title_${orderId}`)
-        filename = storedTitle ? `${storedTitle}.ts` : `${orderId}.ts`
+        filename = storedTitle ? `${storedTitle}.tsx` : `${orderId}.tsx`
+      } else if (industryMatch) {
+        // Try to get industry title from localStorage
+        const industryId = industryMatch[1]
+        const storedTitle = localStorage.getItem(`industry-title-${industryId}`)
+        filename = storedTitle ? `${storedTitle}.tsx` : `${industryId}.tsx`
       } else if (pathname === '/dashboard') {
         filename = '📋 all-orders.ts'
       } else if (pathname === '/dashboard/commissions') {
         filename = '💰 commissions.ts'
       } else if (pathname === '/dashboard/profile') {
         filename = '⚙️ profile.ts'
+      } else if (pathname === '/dashboard/industries') {
+        filename = 'industries.ts'
+      } else if (pathname === '/dashboard/industries/new') {
+        filename = 'new.ts'
+      } else if (pathname === '/dashboard/withdrawals') {
+        filename = 'withdrawals.ts'
       } else {
-        filename = pathname.split('/').pop() || 'file.ts'
+        filename = pathname.split('/').pop() || 'file.tsx'
       }
       
       const newTab: Tab = {
@@ -72,6 +84,15 @@ export function OwnerTabManager() {
             ? { ...tab, filename: `${e.newValue}.ts` }
             : tab
         ))
+      } else if (e.key?.startsWith('industry-title-')) {
+        const industryId = e.key.replace('industry-title-', '')
+        const industryPath = `/dashboard/industries/${industryId}`
+
+        setTabs(prev => prev.map(tab =>
+          tab.href === industryPath
+            ? { ...tab, filename: `${e.newValue}.tsx` }
+            : tab
+        ))
       }
     }
 
@@ -84,14 +105,24 @@ export function OwnerTabManager() {
             ? { ...tab, filename: `${e.detail.title}.ts` }
             : tab
         ))
+      } else if (e.detail?.industryId && e.detail?.title) {
+        const industryPath = `/dashboard/industries/${e.detail.industryId}`
+
+        setTabs(prev => prev.map(tab =>
+          tab.href === industryPath
+            ? { ...tab, filename: `${e.detail.title}.tsx` }
+            : tab
+        ))
       }
     }
 
     window.addEventListener('storage', handleStorageChange)
     window.addEventListener('orderTitleUpdated', handleCustomEvent as EventListener)
+    window.addEventListener('industryTitleUpdated', handleCustomEvent as EventListener)
     return () => {
       window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('orderTitleUpdated', handleCustomEvent as EventListener)
+      window.removeEventListener('industryTitleUpdated', handleCustomEvent as EventListener)
     }
   }, [])
 

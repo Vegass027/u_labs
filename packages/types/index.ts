@@ -22,6 +22,26 @@ export interface User {
 }
 
 // ------------------------------------------------------------
+// Industry Context
+// ------------------------------------------------------------
+
+export interface IndustryContext {
+  id: string
+  name: string
+  keywords: string[]
+  pains: string
+  roles: string
+  processes: string
+  integrations: string
+  metrics: string
+  first_release: string
+  misconceptions: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+// ------------------------------------------------------------
 // Order
 // ------------------------------------------------------------
 
@@ -124,6 +144,21 @@ export interface Notification {
   body?: string | null
   is_read: boolean
   created_at: string
+}
+
+// ------------------------------------------------------------
+// Document
+// ------------------------------------------------------------
+
+export interface Document {
+  name: string
+  path: string
+  id: string
+  size: number
+  created_at: string | null
+  updated_at: string | null
+  publicUrl: string
+  uploaded_by?: string | null
 }
 
 // ------------------------------------------------------------

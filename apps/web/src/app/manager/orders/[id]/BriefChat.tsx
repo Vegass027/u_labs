@@ -20,9 +20,10 @@ export interface ChatMessage {
 
 interface BriefChatProps {
   orderId: string;
+  userRole?: 'client' | 'manager' | 'owner';
 }
 
-export default function BriefChat({ orderId }: BriefChatProps) {
+export default function BriefChat({ orderId, userRole = 'manager' }: BriefChatProps) {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
@@ -212,7 +213,7 @@ export default function BriefChat({ orderId }: BriefChatProps) {
     if (!confirm('Это удалит историю чата с AI. Текущий бриф останется на месте. Продолжить?')) return;
 
     try {
-      await api.delete(`/api/manager/orders/${orderId}/ai-chat`);
+      await api.delete(`/api/orders/${orderId}/ai-chat`);
       setMessages([]);
       setCanGenerateBrief(false);
     } catch (error) {

@@ -2,7 +2,7 @@ import { supabase } from '../../db/client';
 import { NotFoundError, ForbiddenError } from '../../utils/errors';
 import { logger } from '../../utils/logger';
 import { notifyNewMessage } from '../notifications/telegram.service';
-import { createNotification } from '../notifications/notifications.service';
+import { createNewMessageNotification } from '../notifications/notifications.service';
 
 export async function getOrderMessages(
   orderId: string, 
@@ -129,13 +129,7 @@ export async function sendMessage(
     }
 
     // In-app уведомление
-    await createNotification(
-      recipientId,
-      orderId,
-      'new_message',
-      'Новое сообщение',
-      order.title
-    );
+    await createNewMessageNotification(recipientId, orderId, order.title);
   }
 
   return {

@@ -29,13 +29,14 @@ export interface Document {
   created_at: string | null
   updated_at: string | null
   publicUrl: string
+  uploaded_by?: string | null
 }
 
 export async function listOrderDocuments(orderId: string): Promise<Document[]> {
   try {
     const { data: dbDocs, error } = await supabase
       .from('order_documents')
-      .select('*')
+      .select('id, order_id, storage_path, original_name, size, mime_type, uploaded_by, created_at')
       .eq('order_id', orderId)
       .order('created_at', { ascending: true })
 
@@ -67,6 +68,7 @@ export async function listOrderDocuments(orderId: string): Promise<Document[]> {
           created_at: doc.created_at,
           updated_at: doc.created_at,
           publicUrl: signedData.signedUrl,
+          uploaded_by: doc.uploaded_by,
         }
       })
     )
@@ -82,7 +84,8 @@ export async function uploadOrderDocument(
   orderId: string,
   fileBuffer: Buffer,
   fileName: string,
-  mimeType: string
+  mimeType: string,
+  userId: string
 ): Promise<{ url: string; document: Document }> {
   try {
     const transliterated = transliterate(fileName)
@@ -109,6 +112,7 @@ export async function uploadOrderDocument(
         original_name: fileName,
         size: fileBuffer.length,
         mime_type: mimeType,
+        uploaded_by: userId,
       })
       .select()
       .single()
@@ -138,6 +142,7 @@ export async function uploadOrderDocument(
       created_at: dbDoc.created_at,
       updated_at: dbDoc.created_at,
       publicUrl: signedData.signedUrl,
+      uploaded_by: dbDoc.uploaded_by,
     }
 
     return { url: signedData.signedUrl, document }

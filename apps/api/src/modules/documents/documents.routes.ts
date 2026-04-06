@@ -48,7 +48,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
   fastify.post(
     '/api/orders/:id/documents',
     {
-      preHandler: [requireAuth, requireRole('owner', 'manager')],
+      preHandler: [requireAuth, requireRole('owner', 'manager', 'client')],
     },
     async (req: any, reply: any) => {
       const { id: orderId } = req.params as { id: string }
@@ -74,6 +74,9 @@ export async function documentsRoutes(fastify: FastifyInstance) {
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'application/vnd.ms-excel',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'image/jpeg',
+        'image/png',
+        'image/webp',
       ]
 
       if (!data.mimetype || !allowedMimeTypes.includes(data.mimetype)) {
@@ -82,7 +85,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
 
       const { data: order, error: orderError } = await supabase
         .from('orders')
-        .select('id, manager_user_id')
+        .select('id, manager_user_id, client_user_id')
         .eq('id', orderId)
         .single()
 
@@ -90,8 +93,14 @@ export async function documentsRoutes(fastify: FastifyInstance) {
         throw new AppError('Order not found', 404)
       }
 
-      if (order.manager_user_id !== userId && userRole !== 'owner') {
-        throw new AppError('Access denied', 403)
+      if (userRole === 'client') {
+        if (order.client_user_id !== userId) {
+          throw new AppError('Access denied', 403)
+        }
+      } else {
+        if (order.manager_user_id !== userId && userRole !== 'owner') {
+          throw new AppError('Access denied', 403)
+        }
       }
 
       const buffer = await data.toBuffer()
@@ -99,7 +108,8 @@ export async function documentsRoutes(fastify: FastifyInstance) {
         orderId,
         buffer,
         data.filename,
-        data.mimetype
+        data.mimetype,
+        userId
       )
 
       return reply.send(result)
@@ -109,7 +119,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
   fastify.delete(
     '/api/orders/:id/documents/:filepath',
     {
-      preHandler: [requireAuth, requireRole('owner', 'manager')],
+      preHandler: [requireAuth, requireRole('owner', 'manager', 'client')],
     },
     async (req: any, reply: any) => {
       const { id: orderId, filepath } = req.params as { id: string; filepath: string }
@@ -126,8 +136,20 @@ export async function documentsRoutes(fastify: FastifyInstance) {
         throw new AppError('Order not found', 404)
       }
 
-      if (order.manager_user_id !== userId && userRole !== 'owner') {
-        throw new AppError('Access denied', 403)
+      if (userRole === 'client') {
+        const { data: doc, error: docError } = await supabase
+          .from('order_documents')
+          .select('uploaded_by')
+          .eq('storage_path', decodeURIComponent(filepath))
+          .single()
+
+        if (docError || !doc || doc.uploaded_by !== userId) {
+          throw new AppError('Can only delete own files', 403)
+        }
+      } else {
+        if (order.manager_user_id !== userId && userRole !== 'owner') {
+          throw new AppError('Access denied', 403)
+        }
       }
 
       await deleteOrderDocument(orderId, decodeURIComponent(filepath))

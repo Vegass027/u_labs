@@ -8,7 +8,7 @@ import { api } from '@/lib/api';
 interface Notification {
   id: string;
   order_id: string;
-  type: 'new_order' | 'status_change' | 'new_message';
+  type: 'new_order' | 'status_change' | 'new_message' | 'price_set';
   title: string;
   body?: string;
   is_read: boolean;

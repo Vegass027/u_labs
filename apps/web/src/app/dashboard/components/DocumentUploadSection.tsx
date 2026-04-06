@@ -8,15 +8,21 @@ interface DocumentUploadSectionProps {
   orderId: string
   initialDocuments: Document[]
   onDocumentsChange?: (documents: Document[]) => void
+  currentUserId?: string
 }
 
-export function DocumentUploadSection({ orderId, initialDocuments, onDocumentsChange }: DocumentUploadSectionProps) {
+export function DocumentUploadSection({ orderId, initialDocuments, onDocumentsChange, currentUserId }: DocumentUploadSectionProps) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [progress, setProgress] = useState(0)
   const [documents, setDocuments] = useState<Document[]>(initialDocuments)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const canDeleteThis = (doc: Document) => {
+    if (!currentUserId) return false
+    return doc.uploaded_by === currentUserId
+  }
 
   const handleFileUpload = async (file: File) => {
     setUploading(true)
@@ -40,6 +46,7 @@ export function DocumentUploadSection({ orderId, initialDocuments, onDocumentsCh
 
       if (apiError) {
         setError(apiError)
+        setTimeout(() => setError(''), 5000)
         return
       }
 
@@ -53,6 +60,7 @@ export function DocumentUploadSection({ orderId, initialDocuments, onDocumentsCh
       setTimeout(() => setSuccess(false), 3000)
     } catch {
       setError('произошла ошибка при загрузке файла')
+      setTimeout(() => setError(''), 5000)
     } finally {
       setUploading(false)
       setTimeout(() => setProgress(0), 1000)
@@ -128,14 +136,16 @@ export function DocumentUploadSection({ orderId, initialDocuments, onDocumentsCh
                   {doc.name}
                 </span>
               </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); handleDelete(doc) }}
-                className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 w-4 h-4 bg-red-500 rounded-full text-white flex items-center justify-center transition-opacity hover:bg-red-600 shadow-sm"
-              >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              {canDeleteThis(doc) && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDelete(doc) }}
+                  className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 w-4 h-4 bg-red-500 rounded-full text-white flex items-center justify-center transition-opacity hover:bg-red-600 shadow-sm"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -145,6 +155,7 @@ export function DocumentUploadSection({ orderId, initialDocuments, onDocumentsCh
       <input
         ref={fileInputRef}
         type="file"
+        accept=".txt,.md,.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0]
