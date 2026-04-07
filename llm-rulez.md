@@ -77,6 +77,36 @@ Fastify API нужен только для мутаций с бизнес-лог
 - Запросы к API — через отдельный модуль `lib/api.ts`. Никаких fetch напрямую в компонентах.
 - Состояние: локальное через `useState`, серверное через Server Components и revalidation. Никакого глобального стора пока не потребуется.
 
+### Server Components — apiServer для запросов к БД
+
+**ЗАПРЕЩЕНО в Server Components:**
+```tsx
+// ❌ Прямой fetch к API
+const response = await fetch(
+  `${process.env.NEXT_PUBLIC_API_URL}/api/orders/${id}/documents`,
+  {
+    headers: { 'Authorization': `Bearer ${session?.access_token || ''}` },
+    cache: 'no-store',
+  }
+)
+```
+
+**ПРАВИЛЬНО — использовать apiServer:**
+```tsx
+// ✅ Для чтения данных через сервисный слой
+import { apiServer } from '@/lib/api-server'
+
+const { data: documents } = await apiServer.get(
+  `/api/orders/${id}/documents`
+)
+```
+
+**Правило:**
+- Server Components → `apiServer` для чтения данных через сервисный слой
+- Client Components → `api` из `lib/api.ts` для всех запросов к API
+- `apiServer` автоматически добавляет Authorization заголовок из сессии
+- Все запросы к БД идут через сервисный слой (`documents.service.ts`, `orders.service.ts` и т.д.)
+
 ---
 
 ## Что делать
@@ -109,6 +139,7 @@ Fastify API нужен только для мутаций с бизнес-лог
 - Не хранить оригинальные имена файлов в Storage metadata — metadata ненадёжно возвращается при `list()`. Хранить в отдельной таблице БД (`order_documents`).
 - Не делать `fetch('/api/...')` с относительным путём в компонентах — это Next.js route handler, не Fastify. Всегда использовать `api.get/post/patch` из `lib/api.ts` который указывает на `NEXT_PUBLIC_API_URL`.
 - Не дублировать UI компоненты между ролями — если компонент используется в нескольких кабинетах (manager, dashboard, client), выносить его в `apps/web/src/components/` shared папку. Папки по ролям (`/manager/`, `/dashboard/`, `/client/`) содержат только роуты и компоненты специфичные для этой роли. Импорты между ролевыми папками запрещены — `/dashboard/` не должен импортировать из `/manager/` и наоборот.
+- **Не использовать прямой fetch в Server Components** для запросов к API — использовать `apiServer` из `@/lib/api-server`. Прямой fetch нарушает правило "Все запросы к БД только через сервисный слой".
 
 ---
 

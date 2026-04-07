@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { apiServer } from '@/lib/api-server'
 import { BriefSection } from './BriefSection'
 import BriefChat from './BriefChat'
 import { StatusBadge } from '@/components/StatusBadge'
@@ -28,31 +29,6 @@ async function getCurrentUser() {
   }
 }
 
-async function getOrderDocuments(orderId: string): Promise<Document[]> {
-  try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return []
-
-    const { data: { session } } = await supabase.auth.getSession()
-
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}/documents`,
-      {
-        headers: {
-          'Authorization': `Bearer ${session?.access_token || ''}`,
-        },
-        cache: 'no-store',
-      }
-    )
-
-    if (!response.ok) return []
-    return await response.json() || []
-  } catch {
-    return []
-  }
-}
-
 export default async function ManagerOrderDetailPage({
   params,
 }: {
@@ -71,7 +47,9 @@ export default async function ManagerOrderDetailPage({
     .eq('id', params.id)
     .single()
 
-  const documents = await getOrderDocuments(params.id)
+  const { data: documents } = await apiServer.get<Document[]>(
+    `/api/orders/${params.id}/documents`
+  )
 
   if (error || !order) {
     return (
@@ -127,21 +105,79 @@ export default async function ManagerOrderDetailPage({
           )}
         </div>
       </div>
-      
+
       {/* Project Info Panel */}
       <ProjectInfoPanel
         price={order.price}
-        documents={documents}
+        documents={documents || []}
         orderId={order.id}
+        currentUserId={currentUser.id}
       />
-      
+
+      {/* ✅ БЛОК "ПОСЛЕДОВАТЕЛЬНОСТЬ РАБОТЫ" */}
+      <div className="border border-border rounded-lg overflow-hidden bg-card mb-4">
+        <div className="px-4 py-3 border-b border-border bg-muted/50">
+          <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
+            последовательность работы
+          </h2>
+        </div>
+        <div className="p-4 space-y-3">
+          <div className="flex items-center gap-3 text-sm">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-sky-500/20 border border-sky-500/50 flex items-center justify-center text-sky-500 font-mono font-bold">1</div>
+            <span className="text-muted-foreground font-mono">Передайте информацию о проекте</span>
+            <span className="text-sky-500 font-mono">[Ассистент]</span>
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#dcb67a]/20 border border-[#dcb67a]/50 flex items-center justify-center text-[#dcb67a] font-mono font-bold">2</div>
+            <span className="text-muted-foreground font-mono">Карточка проекта сформирована</span>
+            <span className="text-[#dcb67a] font-mono">[Бриф проекта]</span>
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500/20 border border-green-500/50 flex items-center justify-center text-green-500 font-mono font-bold">3</div>
+            <span className="text-muted-foreground font-mono">Общение с клиентом</span>
+            <span className="text-green-500 font-mono">[Чат с клиентом]</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Brief Chat with AI - Ассистент */}
+      <Accordion className="border border-border rounded-lg overflow-hidden bg-card terminal-glow">
+        <AccordionItem value="brief-chat">
+          <AccordionTrigger className="px-4 py-3 bg-muted/50 hover:bg-muted/70 transition-colors [&_[data-slot=accordion-indicator]]:hidden items-center">
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
+                  <span className="text-sky-500">&gt;&gt;&gt;</span> Ассистент <span className="text-sky-500">&lt;&lt;&lt;</span>
+                </h2>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-green-500 font-mono">онлайн</span>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground font-mono mt-1 max-w-xl">Опишите проект клиента, ответьте на вопросы асистента или загрузите голосовое — AI соберёт Бриф проекта</p>
+            </div>
+            <div className="w-8 h-8 rounded border border-sky-500/50 flex items-center justify-center bg-sky-500/10 group-hover:bg-sky-500/20 transition-colors data-[state=open]:rotate-180">
+              <svg className="w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </AccordionTrigger>
+          <AccordionPanel className="px-0">
+            <BriefChat orderId={order.id} />
+          </AccordionPanel>
+        </AccordionItem>
+      </Accordion>
+
       {/* Brief */}
       <Accordion className="border border-border rounded-lg overflow-visible bg-card terminal-glow">
         <AccordionItem value="brief">
           <AccordionTrigger className="px-4 py-3 bg-muted/50 hover:bg-muted/70 transition-colors [&_[data-slot=accordion-indicator]]:hidden items-center">
-            <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
-              <span className="text-[#dcb67a]">&gt;&gt;&gt;</span> Бриф <span className="text-[#dcb67a]">&lt;&lt;&lt;</span>
-            </h2>
+            <div className="flex-1">
+              <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
+                <span className="text-[#dcb67a]">&gt;&gt;&gt;</span> Бриф проекта <span className="text-[#dcb67a]">&lt;&lt;&lt;</span>
+              </h2>
+              <p className="text-sm text-muted-foreground font-mono mt-1 max-w-xl">Готовый бриф проекта на основе собранных и предоставленных вами данных</p>
+            </div>
             <div className="w-8 h-8 rounded border border-[#dcb67a]/50 flex items-center justify-center bg-[#dcb67a]/10 group-hover:bg-[#dcb67a]/20 transition-colors data-[state=open]:rotate-180">
               <svg className="w-4 h-4 text-[#dcb67a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -197,9 +233,14 @@ export default async function ManagerOrderDetailPage({
       <Accordion className="border border-border rounded-lg overflow-hidden bg-card terminal-glow">
         <AccordionItem value="chat-client">
           <AccordionTrigger className="px-4 py-3 bg-muted/50 hover:bg-muted/70 transition-colors [&_[data-slot=accordion-indicator]]:hidden items-center">
-            <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
-              <span className="text-green-500">&gt;&gt;&gt;</span> Чат с клиентом <span className="text-green-500">&lt;&lt;&lt;</span>
-            </h2>
+            <div className="flex-1">
+              <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
+                <span className="text-green-500">&gt;&gt;&gt;</span> Чат с клиентом <span className="text-green-500">&lt;&lt;&lt;</span>
+              </h2>
+              <p className="text-sm text-muted-foreground font-mono mt-1 max-w-xl">
+                Общение с клиентом по деталям проекта
+              </p>
+            </div>
             <div className="w-8 h-8 rounded border border-green-500/50 flex items-center justify-center bg-green-500/10 group-hover:bg-green-500/20 transition-colors data-[state=open]:rotate-180">
               <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -215,56 +256,6 @@ export default async function ManagerOrderDetailPage({
                 messageType="client_manager"
               />
             </div>
-          </AccordionPanel>
-        </AccordionItem>
-      </Accordion>
-
-      {/* Chat with Owner */}
-      <Accordion className="border border-border rounded-lg overflow-hidden bg-card terminal-glow">
-        <AccordionItem value="chat-owner">
-          <AccordionTrigger className="px-4 py-3 bg-muted/50 hover:bg-muted/70 transition-colors [&_[data-slot=accordion-indicator]]:hidden items-center">
-            <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
-              <span className="text-purple-500">&gt;&gt;&gt;</span> Чат с Product Architect <span className="text-purple-500">&lt;&lt;&lt;</span>
-            </h2>
-            <div className="w-8 h-8 rounded border border-purple-500/50 flex items-center justify-center bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors data-[state=open]:rotate-180">
-              <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-          </AccordionTrigger>
-          <AccordionPanel className="px-0">
-            <div className="h-96">
-              <ChatWindow 
-                orderId={order.id} 
-                currentUserId={currentUser.id} 
-                currentUserRole={currentUser.role}
-                messageType="manager_owner"
-              />
-            </div>
-          </AccordionPanel>
-        </AccordionItem>
-      </Accordion>
-
-      {/* Brief Chat with AI */}
-      <Accordion className="border border-border rounded-lg overflow-hidden bg-card terminal-glow">
-        <AccordionItem value="brief-chat">
-          <AccordionTrigger className="px-4 py-3 bg-muted/50 hover:bg-muted/70 transition-colors [&_[data-slot=accordion-indicator]]:hidden items-center">
-            <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider flex items-center gap-2">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-xs text-muted-foreground font-mono">онлайн</span>
-              </div>
-              <span className="text-sky-400">&gt;&gt;&gt;</span>
-              Чат с Брифером <span className="text-sky-400">&lt;&lt;&lt;</span>
-            </h2>
-            <div className="w-8 h-8 rounded border border-sky-400/50 flex items-center justify-center bg-sky-400/10 group-hover:bg-sky-400/20 transition-colors data-[state=open]:rotate-180">
-              <svg className="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-          </AccordionTrigger>
-          <AccordionPanel className="px-0">
-            <BriefChat orderId={order.id} />
           </AccordionPanel>
         </AccordionItem>
       </Accordion>

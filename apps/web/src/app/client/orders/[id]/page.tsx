@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { apiServer } from '@/lib/api-server'
 import Link from 'next/link'
 import { BriefSection } from '@/app/manager/orders/[id]/BriefSection'
 import ChatWindow from '@/components/chat/ChatWindow'
@@ -46,31 +47,6 @@ async function getOrder(orderId: string, userId: string): Promise<Order | null> 
   return data
 }
 
-async function getOrderDocuments(orderId: string): Promise<Document[]> {
-  try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return []
-
-    const { data: { session } } = await supabase.auth.getSession()
-
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}/documents`,
-      {
-        headers: {
-          'Authorization': `Bearer ${session?.access_token || ''}`,
-        },
-        cache: 'no-store',
-      }
-    )
-
-    if (!response.ok) return []
-    return await response.json() || []
-  } catch {
-    return []
-  }
-}
-
 async function hasAiChatHistory(orderId: string): Promise<boolean> {
   const supabase = await createClient()
   const { data } = await supabase
@@ -97,7 +73,7 @@ export default async function ClientOrderDetailPage({ params }: { params: { id: 
   }
 
   const order = await getOrder(params.id, currentUser.id)
-  const documents = await getOrderDocuments(params.id)
+  const { data: documents } = await apiServer.get<Document[]>(`/api/orders/${params.id}/documents`)
   const hasAiHistory = await hasAiChatHistory(params.id)
 
   if (!order) {
@@ -149,7 +125,7 @@ export default async function ClientOrderDetailPage({ params }: { params: { id: 
           // ============================================================ */}
       <ProjectInfoPanel
         price={order.price ?? null}
-        documents={documents}
+        documents={documents || []}
         orderId={order.id}
         currentUserId={currentUser.id}
       />
