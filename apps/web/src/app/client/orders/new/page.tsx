@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
@@ -8,11 +8,31 @@ import { api } from '@/lib/api'
 export default function NewClientOrderPage() {
   const [formData, setFormData] = useState({
     title: '',
-    raw_text: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [focusedField, setFocusedField] = useState<string | null>(null)
   const router = useRouter()
+
+  const inputRefs = {
+    title: useRef<HTMLInputElement>(null),
+  }
+
+  const handleFocus = (fieldName: string) => {
+    setFocusedField(fieldName)
+  }
+
+  const handleBlur = () => {
+    setFocusedField(null)
+  }
+
+  const handleContainerClick = (fieldName: string) => {
+    inputRefs[fieldName as keyof typeof inputRefs]?.current?.focus()
+  }
+
+  useEffect(() => {
+    inputRefs.title.current?.focus()
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -23,106 +43,97 @@ export default function NewClientOrderPage() {
     setError('')
 
     if (!formData.title.trim()) {
-      setError('Название обязательно')
+      setError('название обязательно')
       return
     }
 
     setLoading(true)
 
     try {
-      const { data, error: apiError } = await api.post('/api/orders', {
+      const { error } = await api.post('/api/orders', {
         title: formData.title,
-        raw_text: formData.raw_text || undefined,
       })
 
-      if (apiError) {
-        setError(apiError)
+      if (error) {
+        setError(error)
         return
       }
 
       router.push('/client')
-    } catch (err) {
-      setError('Произошла ошибка')
-    } finally {
+    } catch {
+      setError('произошла ошибка')
       setLoading(false)
     }
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* // ============================================================
-          // HEADER SECTION
-          // ============================================================ */}
-      <div className="mb-6">
-        <Link
-          href="/client"
-          className="inline-flex items-center gap-2 text-sm font-mono text-muted-foreground hover:text-primary transition-colors"
-        >
-          <span className="text-[#dcb67a]">&lt;</span>
-          <span>// вернуться к заявкам</span>
-        </Link>
-      </div>
+    <div className="max-w-2xl mx-auto space-y-4">
+      <Link
+        href="/client"
+        className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors font-mono"
+      >
+        <span className="text-green-500 text-lg">{'<<<'}</span>
+        <span className="text-lg font-semibold">Мои заявки</span>
+      </Link>
 
-      {/* // ============================================================
-          // FORM SECTION
-          // ============================================================ */}
-      <div className="bg-card/50 border border-border rounded-lg p-6 space-y-6">
-        {/* Header */}
-        <div className="text-lg text-foreground font-mono">
-          <span className="font-bold">// Создать заявку // -&gt;</span> <span className="text-[#dcb67a]">Новый проект:</span>
+      <div className="border border-border rounded-lg overflow-hidden bg-card">
+        <div className="px-4 py-3 border-b border-border bg-muted/50">
+          <h1 className="text-lg font-bold text-foreground font-mono">Новая заявка</h1>
         </div>
 
-        {/* Error message */}
         {error && (
-          <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded font-mono text-sm">
-            <span className="text-red-400">// error: </span>
-            {error}
+          <div className="text-sm font-mono text-red-400 px-3 py-2 rounded bg-red-500/10">
+            <span className="font-bold">[error]</span> {error}
           </div>
         )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Title field */}
-          <div className="space-y-2">
-            <label htmlFor="title" className="text-sm font-mono text-muted-foreground">
-              // название заявки
+        <form onSubmit={handleSubmit} className="space-y-4 p-4">
+          <div>
+            <label htmlFor="title" className="block text-xs text-muted-foreground mb-1">
+              Название заявки
             </label>
-            <input
-              id="title"
-              name="title"
-              type="text"
-              value={formData.title}
-              onChange={handleChange}
-              required
-              placeholder="Введите название проекта"
-              className="w-full px-3 py-2 bg-transparent border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary font-mono text-sm placeholder:text-muted-foreground/50"
-            />
+            <div
+              className="relative w-full border border-border rounded focus-within:border-primary/50 bg-card cursor-text"
+              onClick={() => handleContainerClick('title')}
+            >
+              <div className="relative flex items-center min-w-0 px-3 py-2 min-h-[40px]">
+                <input
+                  ref={inputRefs.title}
+                  id="title"
+                  name="title"
+                  type="text"
+                  value={formData.title}
+                  onChange={handleChange}
+                  onFocus={() => handleFocus('title')}
+                  onBlur={handleBlur}
+                  required
+                  className="absolute inset-0 w-full h-full bg-transparent border-none outline-none text-transparent caret-transparent font-mono text-sm cursor-text z-10"
+                />
+                <span className="font-mono text-sm whitespace-pre pointer-events-none text-terminal-prompt">
+                  {formData.title}
+                </span>
+                {focusedField === 'title' && (
+                  <span className="w-2.5 h-5 bg-terminal-prompt animate-blink inline-block shrink-0 ml-0.5 pointer-events-none" />
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Description field */}
-          <div className="space-y-2">
-            <label htmlFor="raw_text" className="text-sm font-mono text-muted-foreground">
-              // описание (опционально)
-            </label>
-            <textarea
-              id="raw_text"
-              name="raw_text"
-              value={formData.raw_text}
-              onChange={handleChange}
-              rows={6}
-              placeholder="Опишите ваш проект..."
-              className="w-full px-3 py-2 bg-transparent border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary font-mono text-sm placeholder:text-muted-foreground/50 resize-none"
-            />
+          <div className="flex items-center gap-3">
+            <p className="text-sm font-mono text-muted-foreground">
+              <span className="text-terminal-comment">//</span> создать заявку{' '}
+            </p>
+            <button
+              type="submit"
+              disabled={loading}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/30 text-primary rounded text-sm font-mono hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <span className="text-primary">
+                {loading ? 'создаём...' : './create-order'}
+              </span>
+            </button>
           </div>
 
-          {/* Submit button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2.5 px-4 bg-primary text-background rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed font-mono text-sm transition-colors"
-          >
-            {loading ? '// создание...' : '// создать заявку'}
-          </button>
         </form>
       </div>
     </div>

@@ -55,9 +55,10 @@ export async function createOrder(input: CreateOrderInput, clientUserId: string)
   return data
 }
 
-export async function createManagerOrder(input: CreateManagerOrderInput, managerUserId: string): Promise<Order> {
-  logger.info({ managerUserId, title: input.title, clientEmail: input.client_email }, 'Manager creating order for client')
-
+async function createOrderAndLinkClient(
+  input: CreateManagerOrderInput,
+  managerUserId: string | null
+): Promise<Order> {
   const { data: order, error: orderError } = await supabase
     .from('orders')
     .insert({
@@ -72,11 +73,11 @@ export async function createManagerOrder(input: CreateManagerOrderInput, manager
     .single()
 
   if (orderError || !order) {
-    logger.error({ error: orderError }, 'Failed to create manager order')
+    logger.error({ error: orderError }, 'Failed to create order')
     throw new AppError(orderError?.message || 'Failed to create order', 500)
   }
 
-  logger.info({ orderId: order.id }, 'Manager order created successfully')
+  logger.info({ orderId: order.id, managerUserId }, 'Order created successfully')
 
   if (input.client_email) {
     const { data: existingClient } = await supabase
@@ -97,6 +98,14 @@ export async function createManagerOrder(input: CreateManagerOrderInput, manager
     }
   }
 
+  return order
+}
+
+export async function createManagerOrder(input: CreateManagerOrderInput, managerUserId: string): Promise<Order> {
+  logger.info({ managerUserId, title: input.title, clientEmail: input.client_email }, 'Manager creating order for client')
+
+  const order = await createOrderAndLinkClient(input, managerUserId)
+
   const { data: managerData } = await supabase
     .from('users')
     .select('full_name')
@@ -115,6 +124,16 @@ export async function createManagerOrder(input: CreateManagerOrderInput, manager
   if (ownerData) {
     await createNewOrderNotification(ownerData.id, order.id, order.title)
   }
+
+  return order
+}
+
+export async function createOwnerOrder(input: CreateManagerOrderInput, ownerUserId: string): Promise<Order> {
+  logger.info({ ownerUserId, title: input.title, clientEmail: input.client_email }, 'Owner creating order for client')
+
+  const order = await createOrderAndLinkClient(input, null)
+
+  await createNewOrderNotification(ownerUserId, order.id, order.title)
 
   return order
 }

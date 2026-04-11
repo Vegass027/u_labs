@@ -1,7 +1,7 @@
 'use client'
 
-import { SidebarFolder } from './SidebarFolder'
-import { SidebarFile } from './SidebarFile'
+import { SidebarFolder } from '@/components/SidebarFolder'
+import { SidebarFile } from '@/components/SidebarFile'
 
 export function VSCodeSidebar() {
   return (

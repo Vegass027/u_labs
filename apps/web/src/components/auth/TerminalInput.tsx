@@ -33,13 +33,13 @@ export function TerminalInput({
   }, [autoFocus])
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && value.trim()) {
+    if (e.key === 'Enter' && value.trim() && !disabled) {
       e.preventDefault()
       onSubmit()
       return
     }
     // Backspace на пустом поле — вернуться назад
-    if (e.key === 'Backspace' && value === '' && onBack) {
+    if (e.key === 'Backspace' && value === '' && onBack && !disabled) {
       e.preventDefault()
       onBack()
     }
@@ -115,24 +115,44 @@ export function TerminalInput({
         </span>
       )}
 
-      {/* Enter — только на активном незавершённом поле */}
+      {/* Кнопки действий — Back ← и Enter ↵ */}
       {!disabled && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            if (value.trim()) onSubmit()
-          }}
-          disabled={!value.trim()}
-          className={[
-            'shrink-0 font-mono text-[11px] px-2.5 py-1 rounded transition-all duration-200',
-            'border font-medium tracking-wide',
-            value.trim()
-              ? 'border-terminal-prompt/50 text-terminal-prompt bg-terminal-prompt/8 hover:bg-terminal-prompt/15 hover:border-terminal-prompt hover:shadow-[0_0_12px_rgba(var(--terminal-prompt-rgb),0.25)] cursor-pointer'
-              : 'border-border/40 text-muted-foreground/30 cursor-not-allowed',
-          ].join(' ')}
-        >
-          Enter ↵
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Back ← — показываем только если есть onBack */}
+          {onBack && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onBack()
+              }}
+              className={[
+                'shrink-0 font-mono text-[11px] px-2.5 py-1 rounded transition-all duration-200',
+                'border font-medium tracking-wide',
+                'border-terminal-prompt/50 text-terminal-prompt bg-terminal-prompt/8 hover:bg-terminal-prompt/15 hover:border-terminal-prompt hover:shadow-[0_0_12px_rgba(var(--terminal-prompt-rgb),0.25)] cursor-pointer',
+              ].join(' ')}
+            >
+              Back ←
+            </button>
+          )}
+          
+          {/* Enter ↵ — только на активном незавершённом поле */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (value.trim()) onSubmit()
+            }}
+            disabled={!value.trim()}
+            className={[
+              'shrink-0 font-mono text-[11px] px-2.5 py-1 rounded transition-all duration-200',
+              'border font-medium tracking-wide',
+              value.trim()
+                ? 'border-terminal-prompt/50 text-terminal-prompt bg-terminal-prompt/8 hover:bg-terminal-prompt/15 hover:border-terminal-prompt hover:shadow-[0_0_12px_rgba(var(--terminal-prompt-rgb),0.25)] cursor-pointer'
+                : 'border-border/40 text-muted-foreground/30 cursor-not-allowed',
+            ].join(' ')}
+          >
+            Enter ↵
+          </button>
+        </div>
       )}
     </div>
   )

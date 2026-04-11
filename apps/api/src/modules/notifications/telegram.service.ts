@@ -7,8 +7,8 @@ interface Order {
   id: string;
   title: string;
   status: string;
-  client_user_id: string;
-  manager_user_id?: string;
+  client_user_id?: string | null;
+  manager_user_id?: string | null;
 }
 
 interface User {

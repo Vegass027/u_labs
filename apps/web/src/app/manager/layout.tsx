@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import { VSCodeSidebar } from './components/VSCodeSidebar'
 import { TabManager } from './components/TabManager'
 import { TabProvider } from './components/TabContext'
 import { MainContent } from './components/MainContent'
 import ManagerHeader from './components/ManagerHeader'
+import { PasswordGate } from '@/components/PasswordGate'
 
 export default async function ManagerLayout({
   children,
@@ -19,7 +21,7 @@ export default async function ManagerLayout({
 
   if (!user) {
     console.log('[MANAGER LAYOUT] No user found')
-    return null
+    redirect('/login')
   }
 
   const { data: userData, error: userDataError } = await supabase
@@ -95,6 +97,9 @@ export default async function ManagerLayout({
           </div>
         </div>
       </div>
+
+      {/* КРИТИЧЕСКАЯ ЛОГИКА: PasswordGate */}
+      <PasswordGate />
     </div>
   )
 }

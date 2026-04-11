@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { listCommissions, markAsPaid, getManagerBalance } from './commissions.service';
+import { listCommissions, markAsPaid, getManagerBalance, getCommissionStatistics } from './commissions.service';
 import { requireAuth } from '../../middleware/auth.middleware';
 import { requireRole } from '../../middleware/role.middleware';
 
@@ -46,6 +46,16 @@ export async function commissionsRoutes(fastify: FastifyInstance) {
 
       const balance = await getManagerBalance(userId);
       return reply.send(balance);
+    }
+  );
+
+  // Получить статистику комиссий (только owner)
+  fastify.get(
+    '/api/admin/commissions/statistics',
+    { preHandler: [requireAuth, requireRole('owner')] },
+    async (req, reply) => {
+      const stats = await getCommissionStatistics();
+      return reply.send(stats);
     }
   );
 }

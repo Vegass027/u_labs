@@ -20,6 +20,7 @@ export default function LoginPage() {
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [forgotEmail, setForgotEmail] = useState('')
   const [forgotSuccess, setForgotSuccess] = useState('')
+  const [forgotLoading, setForgotLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -57,6 +58,12 @@ export default function LoginPage() {
     }
     setError('')
     setPasswordSubmitted(true)
+  }
+
+  const handleBackFromPassword = () => {
+    setStep('email')
+    setPassword('')
+    setError('')
   }
 
   const handleLogin = async () => {
@@ -135,17 +142,31 @@ export default function LoginPage() {
   }
 
   const handleForgotPassword = async () => {
-    setError('')
-    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-      redirectTo: `${process.env.NEXT_PUBLIC_WEB_URL}/auth/callback`
-    })
-
-    if (error) {
-      setError(error.message)
+    if (!forgotEmail.trim()) {
+      setError('Email is required')
       return
     }
 
-    setForgotSuccess('письмо отправлено. проверьте почту.')
+    setError('')
+    setForgotLoading(true)
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: `${process.env.NEXT_PUBLIC_WEB_URL}/auth/callback`
+      })
+
+      if (error) {
+        setError(error.message)
+        setForgotLoading(false)
+        return
+      }
+
+      setForgotSuccess('письмо отправлено. проверьте почту.')
+    } catch (err) {
+      setError('Произошла ошибка при отправке письма')
+    } finally {
+      setForgotLoading(false)
+    }
   }
 
   return (
@@ -188,6 +209,7 @@ export default function LoginPage() {
                   }
                 }}
                 onSubmit={handlePasswordSubmit}
+                onBack={handleBackFromPassword}
                 type="password"
                 autoFocus
               />
@@ -228,6 +250,7 @@ export default function LoginPage() {
                 onChange={setForgotEmail}
                 type="email"
                 onSubmit={handleForgotPassword}
+                disabled={forgotLoading}
               />
             </div>
             {forgotSuccess && (
@@ -237,9 +260,10 @@ export default function LoginPage() {
               <span className="text-terminal-comment">//</span> отменить{' '}
               <button
                 onClick={() => setShowForgotPassword(false)}
-                className="inline-block px-3 py-1.5 rounded-lg bg-card border border-border hover:border-primary/40 transition-colors text-terminal-prompt hover:text-glow-sm"
+                disabled={forgotLoading}
+                className="inline-block px-3 py-1.5 rounded-lg bg-card border border-border hover:border-primary/40 transition-colors text-terminal-prompt hover:text-glow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                ~/cancel
+                {forgotLoading ? '⏳ processing...' : '~/cancel'}
               </button>
             </p>
           </div>

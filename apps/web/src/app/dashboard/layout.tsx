@@ -4,6 +4,7 @@ import { MainContent } from '../manager/components/MainContent'
 import OwnerHeader from './components/OwnerHeader'
 import { OwnerSidebar } from './components/OwnerSidebar'
 import { OwnerTabManager } from './components/OwnerTabManager'
+import { PasswordGate } from '@/components/PasswordGate'
 
 export default async function DashboardLayout({
   children,
@@ -88,6 +89,9 @@ export default async function DashboardLayout({
           </div>
         </div>
       </div>
+
+      {/* КРИТИЧЕСКАЯ ЛОГИКА: PasswordGate */}
+      <PasswordGate />
     </div>
   )
 }

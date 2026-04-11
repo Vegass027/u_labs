@@ -96,3 +96,55 @@ export async function getManagerBalance(managerUserId: string) {
     balance_paid: profile.balance_paid || 0,
   };
 }
+
+export async function getCommissionStatistics() {
+  const { data: commissions, error: commissionsError } = await supabase
+    .from('commission_transactions')
+    .select('tx_status, amount');
+
+  if (commissionsError) {
+    logger.error({ error: commissionsError }, 'Failed to get commission statistics');
+    throw new Error('Failed to get commission statistics');
+  }
+
+  const { data: withdrawals, error: withdrawalsError } = await supabase
+    .from('withdrawal_requests')
+    .select('amount')
+    .eq('status', 'approved');
+
+  if (withdrawalsError) {
+    logger.error({ error: withdrawalsError }, 'Failed to get withdrawal statistics');
+    throw new Error('Failed to get withdrawal statistics');
+  }
+
+  const stats = {
+    total_payable: 0,
+    total_reserved: 0,
+    total_paid: 0,
+    count_payable: 0,
+    count_reserved: 0,
+    count_paid: 0,
+  };
+
+  (commissions || []).forEach((tx) => {
+    const amount = Number(tx.amount) || 0;
+    switch (tx.tx_status) {
+      case 'payable':
+        stats.total_payable += amount;
+        stats.count_payable++;
+        break;
+      case 'reserved':
+        stats.total_reserved += amount;
+        stats.count_reserved++;
+        break;
+    }
+  });
+
+  (withdrawals || []).forEach((wd) => {
+    const amount = Number(wd.amount) || 0;
+    stats.total_paid += amount;
+    stats.count_paid++;
+  });
+
+  return stats;
+}

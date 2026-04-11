@@ -119,6 +119,19 @@ export interface CommissionTransaction {
 }
 
 // ------------------------------------------------------------
+// Commission Statistics
+// ------------------------------------------------------------
+
+export interface CommissionStatistics {
+  total_payable: number
+  total_reserved: number
+  total_paid: number
+  count_payable: number
+  count_reserved: number
+  count_paid: number
+}
+
+// ------------------------------------------------------------
 // Order Message
 // ------------------------------------------------------------
 

@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import {
   createOrder,
   createManagerOrder,
+  createOwnerOrder,
   getOrderById,
   listOrders,
   listManagerOrders,
@@ -82,6 +83,27 @@ export async function ordersRoutes(fastify: FastifyInstance) {
           return reply.status(error.statusCode).send({ error: error.message, code: error.code })
         }
         logger.error({ error }, 'Unexpected error in POST /api/manager/orders')
+        return reply.status(500).send({ error: 'Internal server error' })
+      }
+    }
+  )
+
+  fastify.post(
+    '/api/admin/orders',
+    { preHandler: [requireAuth, requireRole('owner')] },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      try {
+        if (!req.user) {
+          return reply.status(401).send({ error: 'Unauthorized' })
+        }
+        const validatedInput = createManagerOrderSchema.parse(req.body)
+        const order = await createOwnerOrder(validatedInput, req.user.id)
+        return reply.status(201).send(order)
+      } catch (error) {
+        if (error instanceof AppError) {
+          return reply.status(error.statusCode).send({ error: error.message, code: error.code })
+        }
+        logger.error({ error }, 'Unexpected error in POST /api/admin/orders')
         return reply.status(500).send({ error: 'Internal server error' })
       }
     }

@@ -1,17 +1,8 @@
 import type { OrderStatus } from '@agency/types'
+import { STATUS_COLORS } from '@/constants/statusColors'
 
 interface StatusBadgeProps {
   status: OrderStatus
-}
-
-const statusColors: Record<OrderStatus, string> = {
-  new: 'bg-gray-100 text-gray-800',
-  reviewing: 'bg-blue-100 text-blue-800',
-  proposal_sent: 'bg-amber-100 text-amber-800',
-  contract_signed: 'bg-purple-100 text-purple-800',
-  in_development: 'bg-teal-100 text-teal-800',
-  done: 'bg-green-100 text-green-800',
-  rejected: 'bg-red-100 text-red-800',
 }
 
 const statusLabels: Record<OrderStatus, string> = {
@@ -26,7 +17,8 @@ const statusLabels: Record<OrderStatus, string> = {
 
 export function StatusBadge({ status }: StatusBadgeProps) {
   return (
-    <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status]}`}>
+    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-[10px] font-mono uppercase tracking-wider ${STATUS_COLORS[status].border} ${STATUS_COLORS[status].text}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${STATUS_COLORS[status].dot} animate-pulse`} />
       {statusLabels[status]}
     </span>
   )

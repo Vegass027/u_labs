@@ -1,8 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import type { CommissionTransaction, User, Order } from '@agency/types'
-import { MarkAsPaidButton } from './MarkAsPaidButton'
+import type { CommissionTransaction, User, Order, CommissionStatistics } from '@agency/types'
 
 interface CommissionWithRelations extends CommissionTransaction {
   manager?: Pick<User, 'full_name'> | null
@@ -11,10 +10,11 @@ interface CommissionWithRelations extends CommissionTransaction {
 
 interface CommissionsClientProps {
   commissions: CommissionWithRelations[]
+  statistics: CommissionStatistics
   searchParams: { status?: string }
 }
 
-export function CommissionsClient({ commissions, searchParams }: CommissionsClientProps) {
+export function CommissionsClient({ commissions, statistics, searchParams }: CommissionsClientProps) {
   const getTxStatusColor = (status: string | null | undefined): string => {
     const colors: Record<string, string> = {
       'reserved': 'text-amber-400',
@@ -33,6 +33,12 @@ export function CommissionsClient({ commissions, searchParams }: CommissionsClie
     return status ? texts[status] || '—' : '—'
   }
 
+  const getCommissionWord = (count: number): string => {
+    if (count === 1) return 'комиссия'
+    if (count > 1 && count < 5) return 'комиссии'
+    return 'комиссий'
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-4">
       {/* // ============================================================
@@ -41,6 +47,41 @@ export function CommissionsClient({ commissions, searchParams }: CommissionsClie
       <div className="flex items-center justify-between mb-6">
         <div className="text-lg text-foreground font-mono">
           <span className="font-bold">// Комиссии // -&gt;</span> <span className="text-[#dcb67a]">Все комиссии менеджеров:</span>
+        </div>
+      </div>
+
+      {/* // ============================================================
+          // STATISTICS CARDS
+          // ============================================================ */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-card border border-border rounded-lg p-4 hover:border-primary/40 transition-all">
+          <div className="text-xs font-mono text-terminal-comment mb-2">// К выплате (payable)</div>
+          <div className="text-2xl font-bold text-purple-400 mb-1">
+            {statistics.total_payable.toLocaleString('ru-RU')} ₽
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {statistics.count_payable} {getCommissionWord(statistics.count_payable)}
+          </div>
+        </div>
+
+        <div className="bg-card border border-border rounded-lg p-4 hover:border-primary/40 transition-all">
+          <div className="text-xs font-mono text-terminal-comment mb-2">// Зарезервировано (reserved)</div>
+          <div className="text-2xl font-bold text-amber-400 mb-1">
+            {statistics.total_reserved.toLocaleString('ru-RU')} ₽
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {statistics.count_reserved} {getCommissionWord(statistics.count_reserved)}
+          </div>
+        </div>
+
+        <div className="bg-card border border-border rounded-lg p-4 hover:border-primary/40 transition-all">
+          <div className="text-xs font-mono text-terminal-comment mb-2">// Выплачено (paid)</div>
+          <div className="text-2xl font-bold text-green-400 mb-1">
+            {statistics.total_paid.toLocaleString('ru-RU')} ₽
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {statistics.count_paid} {getCommissionWord(statistics.count_paid)}
+          </div>
         </div>
       </div>
 
@@ -105,7 +146,7 @@ export function CommissionsClient({ commissions, searchParams }: CommissionsClie
 
                   {/* Manager - fixed width */}
                   <span className="text-muted-foreground w-48 shrink-0 truncate">
-                    {'{' + (commission.manager?.full_name || 'Unknown') + '}'}
+                    {'〖' + (commission.manager?.full_name || 'Unknown') + '〗'}
                   </span>
 
                   {/* Amount - fixed width */}
@@ -119,16 +160,9 @@ export function CommissionsClient({ commissions, searchParams }: CommissionsClie
                   </span>
 
                   {/* Date - fixed width */}
-                  <span className="text-muted-foreground/60 text-xs w-36 shrink-0">
+                  <span className="text-muted-foreground/60 text-xs w-36 shrink-0 pl-12">
                     {'[' + new Date(commission.created_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ']'}
                   </span>
-
-                  {/* Action button */}
-                  <div className="w-32 shrink-0">
-                    {commission.tx_status === 'payable' && (
-                      <MarkAsPaidButton commissionId={commission.id} />
-                    )}
-                  </div>
                 </div>
               </div>
             ))}

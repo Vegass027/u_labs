@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 
-export default function NewManagerOrderPage() {
+export default function NewOwnerOrderPage() {
   const [formData, setFormData] = useState({
     title: '',
     client_name: '',
@@ -35,7 +35,6 @@ export default function NewManagerOrderPage() {
   }
 
   useEffect(() => {
-    // Автофокус на первое поле
     inputRefs.client_name.current?.focus()
   }, [])
 
@@ -60,7 +59,7 @@ export default function NewManagerOrderPage() {
     setLoading(true)
 
     try {
-      const { error } = await api.post('/api/manager/orders', {
+      const { error } = await api.post('/api/admin/orders', {
         title: formData.title,
         client_name: formData.client_name,
         client_email: formData.client_email || undefined,
@@ -71,7 +70,7 @@ export default function NewManagerOrderPage() {
         return
       }
 
-      router.push('/manager')
+      router.push('/dashboard')
     } catch {
       setError('произошла ошибка')
       setLoading(false)
@@ -80,32 +79,26 @@ export default function NewManagerOrderPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
-      {/* Back link */}
       <Link
-        href="/manager"
+        href="/dashboard"
         className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors font-mono"
       >
-        <span className="text-green-500 text-lg">&lt;&lt;&lt;</span>
-        <span className="text-lg font-semibold">Мои заявки</span>
+        <span className="text-green-500 text-lg">{'<<<'}</span>
+        <span className="text-lg font-semibold">Все заявки</span>
       </Link>
 
-      {/* Form container */}
       <div className="border border-border rounded-lg overflow-hidden bg-card">
-        {/* Header */}
         <div className="px-4 py-3 border-b border-border bg-muted/50">
           <h1 className="text-lg font-bold text-foreground font-mono">Новая заявка</h1>
         </div>
 
-        {/* Error */}
         {error && (
           <div className="text-sm font-mono text-red-400 px-3 py-2 rounded bg-red-500/10">
             <span className="font-bold">[error]</span> {error}
           </div>
         )}
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4 p-4">
-          {/* Client Name */}
           <div>
             <label htmlFor="client_name" className="block text-xs text-muted-foreground mb-1">
               Имя клиента
@@ -137,7 +130,6 @@ export default function NewManagerOrderPage() {
             </div>
           </div>
 
-          {/* Client Email */}
           <div>
             <label htmlFor="client_email" className="block text-xs text-muted-foreground mb-1">
               Email клиента (опционально)
@@ -168,7 +160,6 @@ export default function NewManagerOrderPage() {
             </div>
           </div>
 
-          {/* Title */}
           <div>
             <label htmlFor="title" className="block text-xs text-muted-foreground mb-1">
               Название заявки
@@ -200,7 +191,6 @@ export default function NewManagerOrderPage() {
             </div>
           </div>
 
- {/* Submit button */}
           <div className="flex items-center gap-3">
             <p className="text-sm font-mono text-muted-foreground">
               <span className="text-terminal-comment">//</span> создать заявку{' '}

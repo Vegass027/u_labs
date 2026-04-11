@@ -4,7 +4,7 @@ import { ClientTabManager } from './components/ClientTabManager'
 import { TabProvider } from '@/components/terminal/TabContext'
 import { MainContent } from '@/components/terminal/MainContent'
 import ClientHeader from './components/ClientHeader'
-import { PasswordGate } from './PasswordGate'
+import { PasswordGate } from '@/components/PasswordGate'
 
 export default async function ClientLayout({
   children,
@@ -26,9 +26,6 @@ export default async function ClientLayout({
       .eq('client_contact', user.email)
       .is('client_user_id', null)
   }
-
-  // КРИТИЧЕСКАЯ ЛОГИКА: PasswordGate
-  const needsPassword = user?.user_metadata?.password_set === false
 
   // Получаем данные профиля пользователя
   const { data: userData } = await supabase
@@ -104,7 +101,7 @@ export default async function ClientLayout({
       </div>
 
       {/* КРИТИЧЕСКАЯ ЛОГИКА: PasswordGate */}
-      {needsPassword && <PasswordGate />}
+      <PasswordGate />
     </div>
   )
 }

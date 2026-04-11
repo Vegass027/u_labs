@@ -27,38 +27,43 @@ export async function GET(request: NextRequest) {
       token_hash,
     })
 
-    if (!error && data.user && (type === 'signup' || type === 'invite')) {
-      const role = data.user.user_metadata?.role || 'client'
-      const fullName = data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || ''
+    if (!error && data.user) {
+      if (type === 'signup' || type === 'invite') {
+        const role = data.user.user_metadata?.role || 'client'
+        const fullName = data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || ''
 
-      await supabaseAdmin.auth.admin.updateUserById(data.user.id, {
-        app_metadata: { role }
-      })
+        await supabaseAdmin.auth.admin.updateUserById(data.user.id, {
+          app_metadata: { role }
+        })
 
-      await supabaseAdmin
-        .from('users')
-        .upsert({
-          id: data.user.id,
-          email: data.user.email!,
-          full_name: fullName,
-          role: role,
-          password_hash: '',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'id' })
+        await supabaseAdmin
+          .from('users')
+          .upsert({
+            id: data.user.id,
+            email: data.user.email!,
+            full_name: fullName,
+            role: role,
+            password_hash: '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'id' })
 
-      redirectTo.pathname = '/login'
-      redirectTo.searchParams.set('confirmed', 'true')
-      redirectTo.searchParams.set('email', data.user.email!)
-      
-      const response = NextResponse.redirect(redirectTo)
-      
-      const projectId = process.env.NEXT_PUBLIC_SUPABASE_URL!.split('//')[1].split('.')[0]
-      response.cookies.delete(`sb-${projectId}-auth-token`)
-      response.cookies.delete(`sb-${projectId}-auth-token.0`)
-      response.cookies.delete(`sb-${projectId}-auth-token.1`)
-      
-      return response
+        redirectTo.pathname = '/login'
+        redirectTo.searchParams.set('confirmed', 'true')
+        redirectTo.searchParams.set('email', data.user.email!)
+        
+        const response = NextResponse.redirect(redirectTo)
+        
+        const projectId = process.env.NEXT_PUBLIC_SUPABASE_URL!.split('//')[1].split('.')[0]
+        response.cookies.delete(`sb-${projectId}-auth-token`)
+        response.cookies.delete(`sb-${projectId}-auth-token.0`)
+        response.cookies.delete(`sb-${projectId}-auth-token.1`)
+        
+        return response
+      } else if (type === 'recovery') {
+        redirectTo.pathname = '/auth/reset-password'
+        return NextResponse.redirect(redirectTo)
+      }
     }
   }
 

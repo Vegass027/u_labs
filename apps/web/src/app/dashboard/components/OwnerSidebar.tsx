@@ -1,7 +1,7 @@
 'use client'
 
-import { SidebarFolder } from '../../manager/components/SidebarFolder'
-import { SidebarFile } from '../../manager/components/SidebarFile'
+import { SidebarFolder } from '@/components/SidebarFolder'
+import { SidebarFile } from '@/components/SidebarFile'
 
 export function OwnerSidebar() {
   return (
@@ -13,6 +13,7 @@ export function OwnerSidebar() {
       <div className="flex flex-col gap-1 px-1">
         <SidebarFolder name="Заявки" defaultOpen={true}>
           <SidebarFile filename="all-orders.ts" href="/dashboard" />
+          <SidebarFile filename="new-order.ts" href="/dashboard/orders/new" />
         </SidebarFolder>
 
         <SidebarFolder name="Комиссии" defaultOpen={false}>

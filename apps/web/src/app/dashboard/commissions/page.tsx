@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { CommissionsClient } from './components/CommissionsClient'
+import { apiServer } from '@/lib/api-server'
+import type { CommissionStatistics } from '@agency/types'
 
 async function getCurrentUser() {
   const supabase = await createClient()
@@ -49,13 +51,25 @@ async function getCommissions(filters?: { status?: string }) {
   return data || []
 }
 
+async function getCommissionStatistics(): Promise<CommissionStatistics> {
+  const { data } = await apiServer.get<CommissionStatistics>('/api/admin/commissions/statistics')
+  return data || {
+    total_payable: 0,
+    total_reserved: 0,
+    total_paid: 0,
+    count_payable: 0,
+    count_reserved: 0,
+    count_paid: 0,
+  }
+}
+
 export default async function CommissionsPage({
   searchParams,
 }: {
   searchParams: { status?: string }
 }) {
   const currentUser = await getCurrentUser()
-  
+
   if (!currentUser || currentUser.role !== 'owner') {
     return (
       <div className="max-w-6xl mx-auto py-8 px-4">
@@ -66,8 +80,11 @@ export default async function CommissionsPage({
       </div>
     )
   }
-  
-  const commissions = await getCommissions({ status: searchParams.status })
-  
-  return <CommissionsClient commissions={commissions} searchParams={searchParams} />
+
+  const [commissions, statistics] = await Promise.all([
+    getCommissions({ status: searchParams.status }),
+    getCommissionStatistics()
+  ])
+
+  return <CommissionsClient commissions={commissions} statistics={statistics} searchParams={searchParams} />
 }

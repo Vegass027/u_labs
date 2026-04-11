@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { StatusBadge } from '@/components/StatusBadge'
 import type { Order, OrderStatus } from '@agency/types'
+import { STATUS_COLORS } from '@/constants/statusColors'
 
 // ============================================================================
 // OWNER ORDERS PAGE
@@ -46,15 +48,28 @@ async function getOrders(status?: OrderStatus | null): Promise<Order[]> {
 
 function getOwnerStatusColor(status: string | null | undefined): string {
   const colors: Record<string, string> = {
-    'new': 'text-primary',
-    'reviewing': 'text-amber-400',
-    'proposal_sent': 'text-purple-400',
-    'contract_signed': 'text-cyan-400',
-    'in_development': 'text-green-400',
-    'done': 'text-green-500',
-    'rejected': 'text-red-400',
+    'new': 'text-blue-500',
+    'reviewing': 'text-amber-500',
+    'proposal_sent': 'text-purple-500',
+    'contract_signed': 'text-green-500',
+    'in_development': 'text-cyan-500',
+    'done': 'text-emerald-500',
+    'rejected': 'text-red-500',
   }
-  return status ? colors[status] || 'text-gray-400' : 'text-gray-400'
+  return status ? colors[status] || 'text-gray-500' : 'text-gray-500'
+}
+
+function getOwnerStatusBorderColor(status: string | null | undefined): string {
+  const colors: Record<string, string> = {
+    'new': 'border-blue-500',
+    'reviewing': 'border-amber-500',
+    'proposal_sent': 'border-purple-500',
+    'contract_signed': 'border-green-500',
+    'in_development': 'border-cyan-500',
+    'done': 'border-emerald-500',
+    'rejected': 'border-red-500',
+  }
+  return status ? colors[status] || 'border-gray-500' : 'border-gray-500'
 }
 
 function getOwnerStatusText(status: string | null | undefined): string {
@@ -68,6 +83,10 @@ function getOwnerStatusText(status: string | null | undefined): string {
     'rejected': 'Отклонена',
   }
   return status ? texts[status] || '—' : '—'
+}
+
+function getOwnerStatusDotColor(status: string | null | undefined): string {
+  return status ? STATUS_COLORS[status as OrderStatus].dot : 'bg-gray-400'
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
@@ -169,13 +188,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                   </span>
 
                   {/* Status - fixed width */}
-                  <span className={`${getOwnerStatusColor(order.status)} w-36 shrink-0 flex items-center gap-2 whitespace-nowrap`}>
-                    <span className="relative flex h-2 w-2 shrink-0">
-                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${getOwnerStatusColor(order.status).replace('text-', 'bg-')}`}></span>
-                      <span className={`relative inline-flex rounded-full h-2 w-2 ${getOwnerStatusColor(order.status).replace('text-', 'bg-')}`}></span>
-                    </span>
-                    {getOwnerStatusText(order.status)}
-                  </span>
+                  <div className="w-36 shrink-0">
+                    <StatusBadge status={order.status} />
+                  </div>
 
                   {/* Extra gap between status and client */}
                   <span className="w-8 shrink-0"></span>

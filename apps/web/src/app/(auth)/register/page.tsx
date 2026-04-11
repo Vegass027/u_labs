@@ -81,6 +81,35 @@ export default function RegisterPage() {
     setStep('role')
   }
 
+  const handleBackFromPassword = () => {
+    setStep('email')
+    setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }))
+    setError('')
+  }
+
+  const handleBackFromConfirmPassword = () => {
+    setStep('password')
+    setFormData(prev => ({ ...prev, confirmPassword: '' }))
+    setError('')
+  }
+
+  const handleBackFromFullName = () => {
+    setStep('confirmPassword')
+    setFormData(prev => ({ ...prev, fullName: '' }))
+    setError('')
+  }
+
+  const handleBackFromPhone = () => {
+    setStep('fullName')
+    setFormData(prev => ({ ...prev, phone: '' }))
+    setError('')
+  }
+
+  const handleBackFromRole = () => {
+    setStep('phone')
+    setError('')
+  }
+
   const handleRegister = async () => {
     setError('')
     setLoading(true)
@@ -177,6 +206,7 @@ export default function RegisterPage() {
           value={formData.password}
           onChange={(value) => setFormData({ ...formData, password: value })}
           onSubmit={handlePasswordSubmit}
+          onBack={handleBackFromPassword}
           type="password"
           autoFocus
         />
@@ -188,6 +218,7 @@ export default function RegisterPage() {
           value={formData.confirmPassword}
           onChange={(value) => setFormData({ ...formData, confirmPassword: value })}
           onSubmit={handleConfirmPasswordSubmit}
+          onBack={handleBackFromConfirmPassword}
           type="password"
           autoFocus
         />
@@ -199,6 +230,7 @@ export default function RegisterPage() {
           value={formData.fullName}
           onChange={(value) => setFormData({ ...formData, fullName: value })}
           onSubmit={handleFullNameSubmit}
+          onBack={handleBackFromFullName}
           type="text"
           autoFocus
         />
@@ -211,6 +243,7 @@ export default function RegisterPage() {
             value={formData.phone}
             onChange={(value) => setFormData({ ...formData, phone: value })}
             onSubmit={handlePhoneSubmit}
+            onBack={handleBackFromPhone}
             type="text"
             autoFocus
           />
@@ -250,16 +283,30 @@ export default function RegisterPage() {
               manager
             </button>
           </div>
-          <p className="text-sm font-mono text-muted-foreground">
-            <span className="text-terminal-comment">//</span> подтвердить{' '}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleBackFromRole}
+              className={[
+                'shrink-0 font-mono text-[11px] px-2.5 py-1 rounded transition-all duration-200',
+                'border font-medium tracking-wide',
+                'border-terminal-prompt/50 text-terminal-prompt bg-terminal-prompt/8 hover:bg-terminal-prompt/15 hover:border-terminal-prompt hover:shadow-[0_0_12px_rgba(var(--terminal-prompt-rgb),0.25)] cursor-pointer',
+              ].join(' ')}
+            >
+              Back ←
+            </button>
             <button
               onClick={handleRegister}
               disabled={loading}
-              className="inline-block px-3 py-1.5 rounded-lg bg-card border border-border hover:border-primary/40 transition-colors text-terminal-prompt hover:text-glow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className={[
+                'shrink-0 font-mono text-[11px] px-2.5 py-1 rounded transition-all duration-200',
+                'border font-medium tracking-wide',
+                'border-terminal-prompt/50 text-terminal-prompt bg-terminal-prompt/8 hover:bg-terminal-prompt/15 hover:border-terminal-prompt hover:shadow-[0_0_12px_rgba(var(--terminal-prompt-rgb),0.25)]',
+                loading ? 'opacity-50 cursor-not-allowed' : 'hover:border-terminal-prompt cursor-pointer',
+              ].join(' ')}
             >
               {loading ? '⏳ processing...' : '~/register --execute'}
             </button>
-          </p>
+          </div>
         </div>
       )}
 
