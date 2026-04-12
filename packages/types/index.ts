@@ -205,3 +205,36 @@ export interface PaymentDetails {
   card_number?: string | null
   sbp_comment?: string | null
 }
+
+// ------------------------------------------------------------
+// Revenue Analytics
+// ------------------------------------------------------------
+
+export interface RevenueCategory {
+  label: string
+  total_revenue: number
+  total_gross: number
+  total_commission: number
+  orders_count: number
+}
+
+export interface MonthlyRevenue {
+  month: string
+  owner_direct: number
+  via_managers: number
+  self_clients: number
+  total: number
+  orders_count: number
+}
+
+export interface RevenueAnalytics {
+  all_time: {
+    owner_direct: RevenueCategory
+    via_managers: RevenueCategory
+    self_clients: RevenueCategory
+    total_revenue: number
+    total_gross: number
+    total_orders: number
+  }
+  monthly: MonthlyRevenue[]
+}

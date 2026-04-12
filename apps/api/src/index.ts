@@ -17,6 +17,8 @@ import { avatarRoutes } from './modules/storage/avatar.routes'
 import { withdrawalsRoutes } from './modules/withdrawals/withdrawals.routes'
 import { managerRoutes } from './modules/manager/manager.routes'
 import { industriesRoutes } from './modules/industries/industries.routes'
+import { devApplicationsRoutes } from './modules/dev-applications/dev-applications.routes'
+import { analyticsRoutes } from './modules/analytics/analytics.routes'
 
 const server = Fastify({
   logger: {
@@ -77,6 +79,12 @@ server.register(managerRoutes)
 
 // Industries routes
 server.register(industriesRoutes)
+
+// Dev applications routes (public, no auth)
+server.register(devApplicationsRoutes)
+
+// Analytics routes
+server.register(analyticsRoutes)
 
 // Health check
 server.get('/health', async () => {

@@ -29,9 +29,9 @@ const FinalCTASection = () => {
               {/* CTA as terminal commands */}
               <div className="space-y-2">
                 {[
-                  { cmd: "./start --describe", label: "Описать идею", href: "/register?role=client" },
-                  { cmd: "./start --earn", label: "Начать зарабатывать", href: "/register?role=manager" },
-                  { cmd: "./start --dev", label: "Получать заказы", href: "/register?role=developer" },
+                  { cmd: "./start --describe", label: "Описать идею", href: "/describe-idea" },
+                  { cmd: "./start --earn", label: "Начать зарабатывать", href: "/earn" },
+                  { cmd: "./start --dev", label: "Получать заказы", href: "/dev-mode" },
                 ].map((btn, i) => (
                   <Link key={i} href={btn.href}>
                     <motion.button

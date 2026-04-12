@@ -20,6 +20,10 @@ export function OwnerSidebar() {
           <SidebarFile filename="commissions.ts" href="/dashboard/commissions" />
         </SidebarFolder>
 
+        <SidebarFolder name="Аналитика" defaultOpen={false}>
+          <SidebarFile filename="revenue.ts" href="/dashboard/analytics" />
+        </SidebarFolder>
+
         <SidebarFolder name="Выводы" defaultOpen={false}>
           <SidebarFile filename="withdrawals.ts" href="/dashboard/withdrawals" />
         </SidebarFolder>

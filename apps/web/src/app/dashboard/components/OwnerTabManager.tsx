@@ -57,6 +57,8 @@ export function OwnerTabManager() {
         filename = 'new.ts'
       } else if (pathname === '/dashboard/withdrawals') {
         filename = 'withdrawals.ts'
+      } else if (pathname === '/dashboard/analytics') {
+        filename = '📊 analytics.ts'
       } else {
         filename = pathname.split('/').pop() || 'file.tsx'
       }

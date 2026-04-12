@@ -240,7 +240,7 @@ curl -X POST "https://api.telegram.org/bot8604585152:AAFcNJCauXjDo_s95YK92mTN9YH
   -H "Content-Type: application/json" \
   -d '{
     "url": "ВАШ_NGROK_URL/api/telegram/webhook",
-    "secret_token": "39fcc69e1cae2eb02838d303b4389dc2"
+    "secret_token": ""
   }'
 ```
 
